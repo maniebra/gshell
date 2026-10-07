@@ -17,10 +17,13 @@ Singleton {
     property color iconTint: ShellState.iconTintFromArt ? fromArt(ShellState.iconTint) : ShellState.iconTint
     Behavior on iconTint { ColorAnimation { duration: 500 } }
 
-    // `base` with the cover art's hue and saturation; unchanged without art
+    // `base` with the cover art's hue and saturation; unchanged without art.
+    // Lightness comes from `base` but is kept mid-range: at white or black
+    // (l = 1 or 0) hue and saturation would have no visible effect.
     function fromArt(base) {
         const a = Player.artColor;
-        return a.a > 0 ? Qt.hsla(a.hslHue, a.hslSaturation, Qt.color(base).hslLightness, 1) : base;
+        const l = Math.max(0.45, Math.min(0.75, Qt.color(base).hslLightness));
+        return a.a > 0 ? Qt.hsla(a.hslHue, a.hslSaturation, l, 1) : base;
     }
     readonly property color fill: Qt.rgba(1, 1, 1, 0.16)
     // matte tiles inside glass panels: mostly opaque grey, grain on top

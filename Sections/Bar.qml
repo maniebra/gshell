@@ -1,7 +1,9 @@
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Services.SystemTray
 import QtQuick
+import QtQuick.Effects
 import qs.Services
 import qs.Components
 import qs.Utils
@@ -207,8 +209,56 @@ Variants {
                 }
             }
 
+            // tray: click activates, right click (or a menu-only item) opens its menu
+            Row {
+                anchors { right: status.left; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                spacing: 10
+                Repeater {
+                    model: SystemTray.items
+                    // flattened to white silhouettes so every app matches the
+                    // status glyphs, whatever colors its icon ships with
+                    Image {
+                        id: trayIcon
+                        required property var modelData
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 15; height: 15
+                        sourceSize: Qt.size(60, 60)
+                        source: modelData.icon
+                        smooth: true
+                        mipmap: true
+                        opacity: ma.pressed ? 0.6 : 1
+                        layer.enabled: true
+                        layer.textureSize: Qt.size(60, 60)
+                        layer.mipmap: true
+                        layer.smooth: true
+                        layer.effect: MultiEffect {
+                            brightness: 1
+                            colorization: 1
+                            colorizationColor: Theme.fg
+                        }
+                        MouseArea {
+                            id: ma
+                            anchors { fill: parent; margins: -4 }
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                            onClicked: m => {
+                                const it = trayIcon.modelData;
+                                if (m.button === Qt.MiddleButton) it.secondaryActivate();
+                                else if (m.button === Qt.RightButton || it.onlyMenu) {
+                                    if (!it.hasMenu) return;
+                                    const p = trayIcon.mapToItem(null, 0, trayIcon.height);
+                                    trayMenu.open(it.menu, win, p.x - 8, p.y + 8);
+                                } else it.activate();
+                            }
+                            onWheel: w => trayIcon.modelData.scroll(w.angleDelta.y, false)
+                        }
+                    }
+                }
+            }
+            TrayMenu { id: trayMenu; scr: win.screen }
+
             // status cluster, opens the control center
             Row {
+                id: status
                 anchors { right: parent.right; rightMargin: 18; verticalCenter: parent.verticalCenter }
                 spacing: 8
                 Icon { anchors.verticalCenter: parent.verticalCenter; text: Network.wifiEnabled || Network.type === "ethernet" ? (Network.type === "ethernet" ? Icons.lan : Icons.wifi) : Icons.wifiOff; font.pixelSize: 15 }
@@ -222,8 +272,7 @@ Variants {
             MouseArea {
                 property real startY
                 property bool swiped
-                anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
-                width: 320
+                anchors { right: parent.right; top: parent.top; bottom: parent.bottom; left: status.left; leftMargin: -8 }
                 onPressed: m => { startY = m.y; swiped = false }
                 onPositionChanged: m => {
                     if (swiped || m.y - startY < 10) return;
