@@ -8,6 +8,7 @@ Item {
     property real value: 0
     property string icon
     property bool vertical: false
+    property real radius: Math.min(width, height) / 2
     signal moved(real v)
     implicitWidth: vertical ? 56 : 200
     implicitHeight: vertical ? 140 : 28
@@ -16,7 +17,7 @@ Item {
     Rectangle {
         id: track
         anchors.fill: parent
-        radius: Math.min(width, height) / 2
+        radius: root.radius
         color: Theme.fill
         clip: true
         // fill never shrinks below a circle, so the round end stays round

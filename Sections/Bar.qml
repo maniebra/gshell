@@ -246,7 +246,7 @@ Variants {
                                 else if (m.button === Qt.RightButton || it.onlyMenu) {
                                     if (!it.hasMenu) return;
                                     const p = trayIcon.mapToItem(null, 0, trayIcon.height);
-                                    trayMenu.open(it.menu, win, p.x - 8, p.y + 8);
+                                    trayMenu.open(it.menu, p.x - 8, p.y + 8); // bar sits at the screen's top-left
                                 } else it.activate();
                             }
                             onWheel: w => trayIcon.modelData.scroll(w.angleDelta.y, false)
@@ -263,8 +263,7 @@ Variants {
                 spacing: 8
                 Icon { anchors.verticalCenter: parent.verticalCenter; text: Network.wifiEnabled || Network.type === "ethernet" ? (Network.type === "ethernet" ? Icons.lan : Icons.wifi) : Icons.wifiOff; font.pixelSize: 15 }
                 Icon { anchors.verticalCenter: parent.verticalCenter; text: Audio.muted ? Icons.volOff : Icons.vol; font.pixelSize: 15 }
-                Icon { visible: Battery.available; text: Battery.charging ? Icons.charging : Icons.battery; font.pixelSize: 15 }
-                StyledText { anchors.verticalCenter: parent.verticalCenter; visible: Battery.available; text: Battery.percent + "%"; font.pixelSize: 13; font.weight: Font.DemiBold }
+                BatteryPill { anchors.verticalCenter: parent.verticalCenter; visible: Battery.available }
             }
             // click toggles; a short downward swipe opens. Hyprland stops sending
             // motion once the pointer leaves the bar, so the swipe commits as soon

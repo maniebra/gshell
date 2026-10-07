@@ -1,10 +1,15 @@
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Hyprland
 import QtQuick
 import qs.Utils
 
-// Themed context menu for a tray item. Submenus open in place, with a back row.
-PopupWindow {
+// Themed glass context menu. Shows a tray item's menu (open), or plain
+// entries [{ text, act, icon?, separator? }] (openItems). Submenus open in
+// place, with a back row.
+// A layer surface rather than a popup: Hyprland's focus grab (close on click
+// elsewhere) works with these the same way as for the other panels.
+PanelWindow {
     id: root
     property var menu: null // QsMenuHandle of the tray item
     property var stack: [] // submenu path, innermost last
@@ -12,14 +17,23 @@ PopupWindow {
     readonly property int pad: 6
     readonly property int rowH: 26
 
-    // x, y: in `window`, which must sit at the top-left of `scr` (the bar)
+    // x, y: screen-local position on `scr`
     required property var scr
-    function open(m, window, x, y) {
-        menu = m; stack = [];
-        anchor.window = window;
-        anchor.rect.x = x; anchor.rect.y = y;
+    property var items: null // plain entries, used instead of `menu` when set
+    function openItems(list, x, y) { open(null, x, y); items = list }
+    function open(m, x, y) {
+        menu = m; stack = []; items = null;
+        margins.left = Math.min(x, scr.width - implicitWidth - Theme.gap);
+        margins.top = Math.min(y, scr.height - implicitHeight - Theme.gap);
         visible = true;
     }
+
+    screen: scr
+    visible: false
+    anchors { top: true; left: true }
+    exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.namespace: "gshell-traymenu"
+    WlrLayershell.layer: WlrLayer.Overlay
     function close() { visible = false; stack = [] }
 
     implicitWidth: 230
@@ -44,7 +58,7 @@ PopupWindow {
     GlassSurface {
         anchors.fill: parent
         backdrop: backdrop.texture
-        offset: Qt.point(root.anchor.rect.x, root.anchor.rect.y)
+        offset: Qt.point(root.margins.left, root.margins.top)
         radius: Theme.radiusControl + root.pad // concentric with the rows
         bevel: 12
         blur: 6
@@ -64,11 +78,11 @@ PopupWindow {
             }
 
             Repeater {
-                model: opener.children
+                model: root.items ?? opener.children
                 Loader {
                     required property var modelData
                     width: col.width
-                    sourceComponent: modelData.isSeparator ? sep : row
+                    sourceComponent: modelData.isSeparator || modelData.separator ? sep : row
                     Component {
                         id: sep
                         Item { height: 9; Rectangle { anchors.centerIn: parent; width: parent.width - 12; height: 1; color: Theme.fill } }
@@ -80,7 +94,7 @@ PopupWindow {
                             label: modelData.text.replace(/_(?=\w)/, "") // drop mnemonic underscores
                             onClicked: {
                                 if (modelData.hasChildren) { root.stack = root.stack.concat([modelData]); return; }
-                                modelData.triggered();
+                                if (modelData.act) modelData.act(); else modelData.triggered();
                                 root.close();
                             }
                         }
@@ -98,7 +112,7 @@ PopupWindow {
         width: col.width
         height: root.rowH
         radius: Theme.radiusControl
-        readonly property bool on: entry ? entry.enabled : true
+        readonly property bool on: entry?.enabled ?? true
         color: ma.containsMouse && on ? Theme.accent : "transparent"
         // checkbox / radio state
         StyledText {

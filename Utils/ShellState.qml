@@ -6,6 +6,12 @@ import Quickshell.Io
 Singleton {
     property bool controlCenter: false
     property bool launcher: false
+    // text the launcher opens with: ":" emoji, ">" clipboard
+    property string launcherPrefix: ""
+    function openLauncher(prefix) {
+        launcher = !(launcher && launcherPrefix === prefix);
+        launcherPrefix = prefix;
+    }
     property bool dashboard: false
     // dynamic island: opened by press-and-hold on the bar clock, stays open
     // while the clock or the island itself is hovered
@@ -41,7 +47,9 @@ Singleton {
     IpcHandler {
         target: "shell"
         function toggleControlCenter(): void { controlCenter = !controlCenter }
-        function toggleLauncher(): void { launcher = !launcher }
+        function toggleLauncher(): void { openLauncher("") }
+        function toggleEmoji(): void { openLauncher(":") }
+        function toggleClipboard(): void { openLauncher(">") }
         function toggleDashboard(): void { dashboard = !dashboard }
         function toggleIsland(): void { island = !island }
     }

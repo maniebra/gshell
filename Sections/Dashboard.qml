@@ -303,21 +303,19 @@ PanelWindow {
                     required property var modelData
                     width: ListView.view.width
                     height: col.height + Theme.padTile * 2
-                    Column {
-                        id: col
-                        x: Theme.padTile; y: Theme.padTile
-                        width: parent.width - Theme.padTile * 2
-                        spacing: 2
-                        Caption { text: modelData.appName }
-                        StyledText { width: parent.width; text: modelData.summary; font.weight: Font.DemiBold; elide: Text.ElideRight }
-                        StyledText { width: parent.width; text: modelData.body; color: Theme.fgDim; font.pixelSize: 12; wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight; visible: text !== "" }
-                    }
                     // click runs the default action if any, then dismisses
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: {
-                            modelData.actions.find(a => a.identifier === "default")?.invoke();
-                            modelData.dismiss();
+                        onClicked: col.act(null)
+                    }
+                    NotifContent {
+                        id: col
+                        x: Theme.padTile; y: Theme.padTile
+                        width: parent.width - Theme.padTile * 2
+                        notif: modelData
+                        onAct: a => {
+                            (a ?? notif.actions.find(a => a.identifier === "default"))?.invoke();
+                            notif.dismiss();
                         }
                     }
                 }

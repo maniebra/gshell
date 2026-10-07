@@ -8,9 +8,11 @@ import qs.Utils
 Item {
     id: root
     property string appId
+    // icon theme name; looked up from `appId` unless set
+    property string iconName: DesktopEntries.heuristicLookup(appId)?.icon || appId.toLowerCase()
     property string style: ShellState.iconStyle
     property color tint: Theme.iconTint
-    readonly property url source: Quickshell.iconPath(DesktopEntries.heuristicLookup(appId)?.icon || appId.toLowerCase(), true)
+    readonly property url source: Quickshell.iconPath(iconName, true)
     readonly property int mode: ["default", "dark", "clear", "tinted"].indexOf(style)
     implicitWidth: 16 // 16 and 32 land on whole pixels at 1.25x scale
     implicitHeight: 16

@@ -78,6 +78,9 @@ PanelWindow {
     opacity: Math.max(0, Math.min(1, (win.progress - 0.45) * 2.5))
     scale: 0.86 + 0.14 * win.progress
     transformOrigin: Item.TopRight
+    // rasterize while animating so text scales smoothly instead of snapping to the pixel grid
+    layer.enabled: win.progress > 0 && win.progress < 1
+    layer.smooth: true
     transform: Translate { y: -24 * (1 - win.progress) }
 
     // one glass container holding every tile
@@ -102,7 +105,7 @@ PanelWindow {
                 width: win.tileW; height: win.tileW
                 Grid {
                     anchors.centerIn: parent
-                    columns: 2; rowSpacing: 10; columnSpacing: 4
+                    columns: 2; rowSpacing: 4; columnSpacing: 2
                     RoundToggle {
                         backdrop: backdrop.texture; offset: win.offset; moving: win.progress
                         icon: Network.wifiEnabled ? Icons.wifi : Icons.wifiOff
@@ -153,13 +156,13 @@ PanelWindow {
                 readonly property var p: Player.current
                 width: win.tileW; height: win.tileW
 
-                Image {
+                RoundedImage {
                     id: art
                     x: Theme.padTile; y: Theme.padTile
                     width: 52; height: 52
+                    radius: Theme.radiusControl
                     source: media.p?.trackArtUrl ?? ""
-                    fillMode: Image.PreserveAspectCrop
-                    visible: status === Image.Ready
+                    visible: !!media.p?.trackArtUrl
                 }
                 Icon {
                     x: Theme.padTile; y: Theme.padTile; width: 52; height: 52
@@ -573,7 +576,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         text: Battery.charging ? Icons.charging : Icons.battery
                         font.pixelSize: 15
-                        color: Battery.low ? "#ff453a" : Battery.charging ? "#30d158" : Theme.fg
+                        color: Battery.low ? "#ff453a" : Theme.fg
                     }
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
@@ -595,7 +598,7 @@ PanelWindow {
                         { p: PowerProfile.Performance, icon: Icons.performance, name: "Performance" }
                     ].filter(x => x.p !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
                     width: parent.width; height: 32
-                    radius: Theme.radiusControl
+                    radius: height / 2
                     color: Theme.fill
 
                     Rectangle {
@@ -604,7 +607,7 @@ PanelWindow {
                         height: seg.height - seg.inset * 2
                         x: seg.inset + idx * seg.width / seg.profiles.length
                         y: seg.inset
-                        radius: Theme.radiusControl - seg.inset
+                        radius: height / 2
                         color: Qt.rgba(1, 1, 1, 0.9)
                         Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     }
@@ -619,15 +622,15 @@ PanelWindow {
                                 height: seg.height
                                 Row {
                                     anchors.centerIn: parent
-                                    spacing: 5
+                                    spacing: 3
                                     Icon {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.icon; font.pixelSize: 12
+                                        text: modelData.icon; font.pixelSize: 11
                                         color: on ? "#1c1c1e" : Theme.fg
                                     }
                                     StyledText {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.name; font.pixelSize: 12
+                                        text: modelData.name; font.pixelSize: 11
                                         color: on ? "#1c1c1e" : Theme.fg
                                     }
                                 }

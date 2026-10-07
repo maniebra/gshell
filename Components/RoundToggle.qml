@@ -14,11 +14,11 @@ Column {
     signal toggled
     signal expand
     spacing: 5
-    width: 78
+    width: 66
 
     GlassSurface {
         anchors.horizontalCenter: parent.horizontalCenter
-        width: 46; height: 46; radius: Theme.radiusControl + 4 // squircle-ish tile, not a circle
+        width: 46; height: 46; radius: width / 2 // iOS round toggle
         backdrop: root.backdrop
         offset: root.offset
         moving: root.moving + scale
