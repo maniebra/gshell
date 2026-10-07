@@ -45,6 +45,25 @@ Variants {
         }
         visible: apps.length > 0
 
+        // right-click menu: the app's windows, its desktop actions, new window, quit
+        function openMenu(icon) {
+            const cls = icon.modelData.lastIpcObject.class;
+            const entry = DesktopEntries.heuristicLookup(cls);
+            const wins = Hyprland.toplevels.values.filter(t => t.lastIpcObject?.class === cls);
+            const items = wins.map(t => ({ text: t.title || cls, act: () => t.wayland?.activate() }));
+            if (entry) {
+                items.push({ separator: true }, { text: "New Window", act: () => entry.execute() });
+                for (const a of entry.actions) items.push({ text: a.name, act: () => a.execute() });
+            }
+            items.push({ separator: true },
+                { text: wins.length > 1 ? "Quit All" : "Quit", act: () => wins.forEach(t => t.wayland?.close()) });
+            const p = icon.mapToItem(null, icon.width / 2, 0);
+            menu.openItems(items, win.offset.x + p.x - menu.implicitWidth / 2, win.offset.y + p.y - Theme.gap, true);
+        }
+        TrayMenu { id: menu; scr: win.modelData }
+        // keep the dock up while its menu is open, hide after it closes
+        Connections { target: menu; function onVisibleChanged() { if (!menu.visible) hide.restart() } }
+
         Backdrop {
             id: backdrop
             screen: win.modelData
@@ -55,9 +74,10 @@ Variants {
 
         Item { id: area; anchors.fill: parent }
         HoverHandler {
+            id: hover
             onHoveredChanged: if (hovered) { hide.stop(); win.shown = true } else hide.restart()
         }
-        Timer { id: hide; interval: 500; onTriggered: win.shown = false }
+        Timer { id: hide; interval: 500; onTriggered: win.shown = menu.visible || hover.hovered }
         Item { id: trigger; anchors { left: parent.left; right: parent.right; bottom: parent.bottom } height: 3 }
 
         GlassSurface {
@@ -94,6 +114,7 @@ Variants {
                         scale: tap.pressed ? 0.88 : 1
                         Behavior on scale { NumberAnimation { duration: 120 } }
                         TapHandler { id: tap; onTapped: app.modelData.wayland?.activate() }
+                        TapHandler { acceptedButtons: Qt.RightButton; onTapped: win.openMenu(app) }
                         // running/focused indicator
                         Rectangle {
                             anchors { horizontalCenter: parent.horizontalCenter; top: parent.bottom; topMargin: 2 }

@@ -20,13 +20,14 @@ PanelWindow {
     // x, y: screen-local position on `scr`
     required property var scr
     property var items: null // plain entries, used instead of `menu` when set
-    function openItems(list, x, y) { open(null, x, y); items = list }
-    function open(m, x, y) {
-        menu = m; stack = []; items = null;
-        margins.left = Math.min(x, scr.width - implicitWidth - Theme.gap);
-        margins.top = Math.min(y, scr.height - implicitHeight - Theme.gap);
-        visible = true;
-    }
+    // `above`: y is the menu's bottom edge (e.g. opening up from the dock)
+    function openItems(list, x, y, above) { menu = null; stack = []; items = list; place(x, y, above) }
+    function open(m, x, y) { menu = m; stack = []; items = null; place(x, y, false) }
+    function place(x, y, above) { ax = x; ay = y; up = above; visible = true }
+    // bound, not assigned: the height is only known once the rows are built
+    property real ax; property real ay; property bool up
+    margins.left: Math.max(Theme.gap, Math.min(ax, scr.width - implicitWidth - Theme.gap))
+    margins.top: Math.max(Theme.gap, Math.min(up ? ay - implicitHeight : ay, scr.height - implicitHeight - Theme.gap))
 
     screen: scr
     visible: false
