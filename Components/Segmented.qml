@@ -10,7 +10,7 @@ Rectangle {
     readonly property int inset: 2
     readonly property int idx: options.findIndex(o => o.value === current)
     height: 28
-    radius: Theme.radiusControl
+    radius: height / 2 // capsule
     color: Theme.fill
 
     Rectangle {
@@ -19,7 +19,7 @@ Rectangle {
         height: seg.height - seg.inset * 2
         x: seg.inset + Math.max(seg.idx, 0) * seg.width / seg.options.length
         y: seg.inset
-        radius: Theme.radiusControl - seg.inset
+        radius: height / 2
         color: Qt.rgba(1, 1, 1, 0.9)
         Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
     }

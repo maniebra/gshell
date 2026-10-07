@@ -124,6 +124,7 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.visible
+        snapshot: true
     }
     readonly property point offset: Qt.point(((screen?.width ?? 0) - width) / 2, margins.top)
 
@@ -139,7 +140,7 @@ PanelWindow {
             offset: win.offset
             moving: win.progress
             radius: Theme.radiusPanel
-            bevel: 18
+            bevel: 26
             blur: 1.5
             tint: Qt.rgba(1, 1, 1, 0.03)
         }

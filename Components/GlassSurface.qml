@@ -10,11 +10,11 @@ Item {
     property real moving: 0
     property real radius: height / 2
     property real bevel: Math.min(radius, 16)
-    property real strength: bevel // px the rim bends rays by (x ~1.1 at the very edge)
+    property real strength: bevel * 3 // px the rim bends rays by (x ~1.1 at the very edge)
     property real ior: 1.5
     property real dispersion: 0.12
     property real blur: 1.5
-    property real skew: 1.2
+    property real skew: 3.5
     property real noise: 0.015
     property real vibrancy: 0.35
     property color tint: Qt.rgba(1, 1, 1, 0.04)

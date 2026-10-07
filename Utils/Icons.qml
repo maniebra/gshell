@@ -9,8 +9,9 @@ Singleton {
 
     readonly property string wifi: sf(0x647)          // wifi
     readonly property string wifiOff: sf(0x648)       // wifi.slash
-    readonly property string bt: "ᛒ"             // ᛒ, not in SF Symbols (falls back to a runic font)
-    readonly property string btOff: "ᛒ"
+    // not in SF Symbols: Material Design glyphs, which fontconfig falls back to the Nerd Font for
+    readonly property string bt: "\u{f00af}"      // nf-md-bluetooth
+    readonly property string btOff: "\u{f00b2}"   // nf-md-bluetooth_off
     readonly property string lan: sf(0x886)           // point.3.filled.connected.trianglepath.dotted
     readonly property string vpn: sf(0x667)           // shield.fill
     readonly property string vol: sf(0x2A7)           // speaker.wave.2.fill

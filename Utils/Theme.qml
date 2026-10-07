@@ -2,14 +2,31 @@ pragma Singleton
 
 import Quickshell
 import QtQuick
+import qs.Services
 
 Singleton {
     readonly property color bg: "#1e1e2e"
     readonly property color fg: "#ffffff"
     readonly property color fgDim: Qt.rgba(1, 1, 1, 0.6)
-    readonly property color accent: "#0a84ff"
+    // user-picked (Dashboard > Appearance); optionally takes hue and saturation
+    // from the cover art, keeping the picked color's lightness
+    readonly property color accentBase: ShellState.accent
+    property color accent: ShellState.accentFromArt ? fromArt(accentBase) : accentBase
+    Behavior on accent { ColorAnimation { duration: 500 } }
+    // tinted app icons, same option
+    property color iconTint: ShellState.iconTintFromArt ? fromArt(ShellState.iconTint) : ShellState.iconTint
+    Behavior on iconTint { ColorAnimation { duration: 500 } }
+
+    // `base` with the cover art's hue and saturation; unchanged without art
+    function fromArt(base) {
+        const a = Player.artColor;
+        return a.a > 0 ? Qt.hsla(a.hslHue, a.hslSaturation, Qt.color(base).hslLightness, 1) : base;
+    }
     readonly property color fill: Qt.rgba(1, 1, 1, 0.16)
-    readonly property int barHeight: 34
+    // matte tiles inside glass panels: mostly opaque grey, grain on top
+    readonly property color matte: Qt.rgba(0.2, 0.2, 0.215, 0.85)
+    readonly property color matteBorder: Qt.rgba(1, 1, 1, 0.1)
+    readonly property int barHeight: 28
     readonly property int gap: 6
     // concentric corners: outer radius = inner radius + padding
     readonly property int radiusControl: 8

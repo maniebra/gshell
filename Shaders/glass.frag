@@ -122,11 +122,11 @@ void main() {
     float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
     col *= min(1.0, 0.28 / max(l2, 1e-3));
 
-    // Fresnel: a ~3px band hugging the rim, lifted toward white
-    float fres = clamp(pow(1.2 - depth * 0.185, 5.0), 0.0, 1.0);
-    col = mix(col, vec3(1.0), fres * 0.14);
+    // Fresnel: a ~6px band hugging the rim, lifted toward white
+    float fres = clamp(pow(1.2 - depth * 0.09, 5.0), 0.0, 1.0);
+    col = mix(col, vec3(1.0), fres * 0.045);
     // iOS 27: thin darkened edge just inside the rim for separation
-    float rimDark = smoothstep(0.0, 1.0, depth) * (1.0 - smoothstep(1.0, 3.0, depth));
+    float rimDark = smoothstep(0.0, 1.5, depth) * (1.0 - smoothstep(1.5, 5.0, depth));
     col *= 1.0 - rimDark * 0.35;
     // glare: two lobes on opposite diagonals (doubled normal angle), key at
     // bottom-left, the far lobe at top-right dimmer
@@ -134,7 +134,7 @@ void main() {
     bool far = g.x > 0.0 && g.y < 0.0;
     float glare = (0.5 + 0.5 * sin(2.0 * ang)) * 1.35 * (far ? 0.85 : 1.0); // iOS 27: brighter speculars
     glare = clamp(pow(glare, 1.1), 0.0, 1.0) * fres;
-    col = mix(col, min(col * 1.6 + 0.5, vec3(1.0)), glare);
+    col = mix(col, min(col * 1.6 + 0.5, vec3(1.0)), glare * 0.32);
 
     col += (hash(px) - 0.5) * noise;
     fragColor = vec4(clamp(col, 0.0, 1.0), 1.0) * alpha * qt_Opacity;

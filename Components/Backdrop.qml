@@ -6,12 +6,17 @@ import qs.Services
 
 // What lies under the shell on `screen`: wallpaper plus captures of the
 // windows on the active workspace. Pass `texture` to GlassSurface.
+// `snapshot` instead grabs the whole output once each time `active` turns on:
+// composited exactly as seen (per-window captures of clients rendering at a
+// different scale come out magnified), but static while the panel is open.
 Item {
     id: root
     required property var screen
     readonly property var monitor: Hyprland.monitorFor(screen)
     readonly property alias texture: tex
     property bool active: true
+    property bool snapshot: false
+    onActiveChanged: if (active && snapshot) shot.captureFrame()
     // ponytail: mirrors decoration in ~/.config/hypr/hyprland.lua by hand; read via hyprctl getoption if it drifts
     readonly property int rounding: 12
     readonly property int border: 1
@@ -37,8 +42,17 @@ Item {
         width: root.screen.width
         height: root.screen.height
 
+        ScreencopyView {
+            id: shot
+            anchors.fill: parent
+            visible: root.snapshot
+            captureSource: root.snapshot ? root.screen : null
+            live: false
+        }
+
         Image {
             anchors.fill: parent
+            visible: !root.snapshot
             source: Wallpaper.pathFor(root.screen.name)
             fillMode: Image.PreserveAspectCrop // hyprpaper "cover"
             sourceSize: Qt.size(width, height)
@@ -47,7 +61,7 @@ Item {
 
         Repeater {
             // stable model: delegates (and their captures) persist, only move
-            model: Hyprland.toplevels
+            model: root.snapshot ? [] : Hyprland.toplevels
 
             // captures carry no compositor decoration; redraw border + rounding
             // in one shader pass straight off the capture texture
@@ -91,7 +105,7 @@ Item {
     // ponytail: 60Hz IPC poll, gate on a drag/floating window if CPU shows up
     Timer {
         interval: 16
-        running: root.active && (root.monitor?.focused ?? false) // drags happen on the focused monitor
+        running: root.active && !root.snapshot && (root.monitor?.focused ?? false) // drags happen on the focused monitor
         repeat: true
         onTriggered: Hyprland.refreshToplevels()
     }

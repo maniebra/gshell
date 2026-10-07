@@ -13,16 +13,18 @@ import qs.Utils
 PanelWindow {
     id: win
     readonly property int pad: Theme.padPanel
-    // window starts at the bar's bottom edge so the glass can drip out of it
+    // window starts at the bar's bottom edge so the glass grows out of it
     readonly property int lift: Theme.gap
     readonly property int colW: 340
     readonly property int calW: 300
     readonly property int tileH: 170
+    readonly property int tabH: 28 + pad
+    property int tab: 0 // 0 overview, 1 notifications, 2 appearance
 
     screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
     property real progress: ShellState.dashboard ? 1 : 0
     Behavior on progress {
-        SpringAnimation { spring: 2.5; damping: 0.4; epsilon: 0.002 }
+        NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
     }
     visible: progress > 0.002
     color: "transparent"
@@ -33,10 +35,10 @@ PanelWindow {
     anchors.top: true // horizontally centered by the compositor
     margins.top: Theme.gap + Theme.barHeight
     implicitWidth: colW + calW + pad * 3
-    implicitHeight: tileH * 2 + pad * 3 + lift
+    implicitHeight: tileH * 2 + pad * 3 + tabH + lift
     mask: Region { item: stage }
 
-    onVisibleChanged: if (visible) cal.month = new Date()
+    onVisibleChanged: if (visible) { cal.month = new Date(); tab = 0 }
     Binding { target: SysStats; property: "active"; value: win.visible }
 
     HyprlandFocusGrab {
@@ -49,14 +51,38 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.visible
+        snapshot: true
     }
     readonly property point offset: Qt.point(((screen?.width ?? 0) - width) / 2, margins.top)
 
+    // matte grey tiles with grain, same as the control center
     component Tile: Rectangle {
         radius: Theme.radiusTile
-        // darker wells than the panel, so content pops against the glass
-        color: Qt.rgba(0, 0, 0, 0.1)
-        border.color: Qt.rgba(1, 1, 1, 0.1)
+        color: Theme.matte
+        border.color: Theme.matteBorder
+        Grain { radius: parent.radius }
+    }
+
+    // "From Cover Art" switch: take hue + saturation from the playing cover art
+    component ArtSwitch: Row {
+        id: sw
+        property bool on
+        signal toggled
+        spacing: 6
+        StyledText { anchors.verticalCenter: parent.verticalCenter; text: "From Cover Art"; font.pixelSize: 11; color: Theme.fgDim }
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: 30; height: 18; radius: 9
+            color: sw.on ? Theme.accent : Theme.fill
+            Behavior on color { ColorAnimation { duration: 160 } }
+            Rectangle {
+                width: 14; height: 14; radius: 7; y: 2
+                x: sw.on ? parent.width - width - 2 : 2
+                color: "white"
+                Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            }
+            MouseArea { anchors { fill: parent; margins: -4 } onClicked: sw.toggled() }
+        }
     }
 
     component Caption: StyledText {
@@ -104,10 +130,9 @@ PanelWindow {
         offset: win.offset
         progress: win.progress
         lift: win.lift
-        screenName: win.screen?.name ?? ""
         panelH: stage.height
         originX: 0.5
-        bevel: 18
+        bevel: 26
         blur: 3
         tint: Qt.rgba(0.02, 0.02, 0.04, 0.45)
         vibrancy: 0.6
@@ -124,6 +149,192 @@ PanelWindow {
         focus: true
         Keys.onEscapePressed: ShellState.dashboard = false
 
+        Segmented {
+            x: win.pad; y: win.pad
+            width: 330
+            anchors.horizontalCenter: parent.horizontalCenter
+            options: [{ label: "Overview", value: 0 }, { label: "Notifications" + (Notifs.list.length ? ` (${Notifs.list.length})` : ""), value: 1 }, { label: "Appearance", value: 2 }]
+            current: win.tab
+            onPicked: v => win.tab = v
+        }
+
+        // ── appearance ──
+        Item {
+            y: win.tabH; width: parent.width; height: parent.height - win.tabH
+            readonly property int page: 2
+            x: (page - win.tab) * 48
+            opacity: win.tab === page ? 1 : 0
+            visible: opacity > 0
+            enabled: win.tab === page
+            Behavior on x { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 220 } }
+
+            Tile {
+                x: win.pad; y: win.pad
+                width: parent.width - win.pad * 2; height: 168
+                Caption { x: Theme.padTile + 4; y: Theme.padTile; text: "App Icons" }
+                ArtSwitch {
+                    anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
+                    on: ShellState.iconTintFromArt
+                    onToggled: ShellState.iconTintFromArt = !ShellState.iconTintFromArt
+                }
+                // live preview of the picked style
+                Row {
+                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 34 }
+                    spacing: 14
+                    Repeater {
+                        model: ["firefox", "org.gnome.Nautilus", "spotify", "kitty", "code"]
+                        AppIcon { required property string modelData; appId: modelData; width: 32; height: 32 }
+                    }
+                }
+                // tint color, used by the "tinted" style
+                Row {
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: styles.top; bottomMargin: 12 }
+                    spacing: 10
+                    opacity: ShellState.iconStyle === "tinted" ? 1 : 0.35
+                    Repeater {
+                        model: ["#ffd60a", "#ff9f0a", "#ff453a", "#ff375f", "#bf5af2", "#5e5ce6", "#0a84ff", "#64d2ff", "#30d158", "#ffffff"]
+                        Rectangle {
+                            required property string modelData
+                            readonly property bool picked: Qt.colorEqual(ShellState.iconTint, modelData)
+                            width: 20; height: 20; radius: 10
+                            antialiasing: true
+                            color: modelData
+                            border { width: picked ? 2 : 0; color: Theme.fg }
+                            scale: picked ? 1.15 : 1
+                            Behavior on scale { NumberAnimation { duration: 150 } }
+                            MouseArea {
+                                anchors { fill: parent; margins: -3 }
+                                onClicked: { ShellState.iconTint = parent.modelData; ShellState.iconStyle = "tinted" }
+                            }
+                        }
+                    }
+                }
+                Segmented {
+                    id: styles
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: Theme.padTile }
+                    options: [{ label: "Default", value: "default" }, { label: "Dark", value: "dark" }, { label: "Clear", value: "clear" }, { label: "Tinted", value: "tinted" }]
+                    current: ShellState.iconStyle
+                    onPicked: v => ShellState.iconStyle = v
+                }
+            }
+
+            Tile {
+                x: win.pad; y: win.pad * 2 + 168
+                width: parent.width - win.pad * 2; height: 64
+                Caption { x: Theme.padTile + 4; y: Theme.padTile; text: "Accent Color" }
+                ArtSwitch {
+                    anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
+                    on: ShellState.accentFromArt
+                    onToggled: ShellState.accentFromArt = !ShellState.accentFromArt
+                }
+                Row {
+                    anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
+                    spacing: 6
+                    StyledText { anchors.verticalCenter: parent.verticalCenter; text: "From Cover Art"; font.pixelSize: 11; color: Theme.fgDim }
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 30; height: 18; radius: 9
+                        color: ShellState.accentFromArt ? Theme.accent : Theme.fill
+                        Behavior on color { ColorAnimation { duration: 160 } }
+                        Rectangle {
+                            width: 14; height: 14; radius: 7; y: 2
+                            x: ShellState.accentFromArt ? parent.width - width - 2 : 2
+                            color: "white"
+                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                        }
+                        MouseArea { anchors { fill: parent; margins: -4 } onClicked: ShellState.accentFromArt = !ShellState.accentFromArt }
+                    }
+                }
+                Row {
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.padTile + 2 }
+                    spacing: 12
+                    Repeater {
+                        model: ["#0a84ff", "#5e5ce6", "#bf5af2", "#ff375f", "#ff453a", "#ff9f0a", "#ffd60a", "#30d158", "#64d2ff", "#8e8e93"]
+                        Rectangle {
+                            required property string modelData
+                            readonly property bool picked: Qt.colorEqual(ShellState.accent, modelData)
+                            width: 20; height: 20; radius: 10
+                            antialiasing: true
+                            color: modelData
+                            border { width: picked ? 2 : 0; color: Theme.fg }
+                            scale: picked ? 1.15 : 1
+                            Behavior on scale { NumberAnimation { duration: 150 } }
+                            // with cover-art sampling on, the pick only sets lightness
+                            MouseArea { anchors { fill: parent; margins: -3 } onClicked: ShellState.accent = parent.modelData }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── notifications ──
+        Item {
+            y: win.tabH; width: parent.width; height: parent.height - win.tabH
+            // slide + fade toward the picked tab's side
+            readonly property int page: 1
+            x: (page - win.tab) * 48
+            opacity: win.tab === page ? 1 : 0
+            visible: opacity > 0
+            enabled: win.tab === page
+            Behavior on x { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 220 } }
+
+            StyledText {
+                anchors.centerIn: parent
+                visible: Notifs.list.length === 0
+                text: "No notifications"
+                color: Theme.fgDim
+            }
+            StyledText {
+                anchors { right: parent.right; rightMargin: win.pad + 4; top: parent.top }
+                visible: Notifs.list.length > 0
+                text: "Clear all"
+                font.pixelSize: 12
+                color: Theme.accent
+                MouseArea { anchors.fill: parent; onClicked: Notifs.clear() }
+            }
+            ListView {
+                anchors { fill: parent; margins: win.pad; topMargin: 22 }
+                spacing: win.pad
+                clip: true
+                model: Notifs.list
+                delegate: Tile {
+                    required property var modelData
+                    width: ListView.view.width
+                    height: col.height + Theme.padTile * 2
+                    Column {
+                        id: col
+                        x: Theme.padTile; y: Theme.padTile
+                        width: parent.width - Theme.padTile * 2
+                        spacing: 2
+                        Caption { text: modelData.appName }
+                        StyledText { width: parent.width; text: modelData.summary; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                        StyledText { width: parent.width; text: modelData.body; color: Theme.fgDim; font.pixelSize: 12; wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight; visible: text !== "" }
+                    }
+                    // click runs the default action if any, then dismisses
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            modelData.actions.find(a => a.identifier === "default")?.invoke();
+                            modelData.dismiss();
+                        }
+                    }
+                }
+            }
+        }
+
+        Item {
+        id: overview
+        y: win.tabH; width: parent.width; height: parent.height - win.tabH
+        // slide + fade toward the picked tab's side
+        readonly property int page: 0
+        x: (page - win.tab) * 48
+        opacity: win.tab === page ? 1 : 0
+        visible: opacity > 0
+        enabled: win.tab === page
+        Behavior on x { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 220 } }
 
         // ── media ──
         Tile {
@@ -190,9 +401,9 @@ PanelWindow {
                 spacing: 4
                 Repeater {
                     model: [
-                        { icon: Icons.prev, size: 20, act: () => media.p?.previous() },
+                        { icon: Icons.prev, size: 20, act: () => Player.previous() },
                         { icon: media.p?.isPlaying ? Icons.pause : Icons.play, size: 26, act: () => media.p?.togglePlaying() },
-                        { icon: Icons.next, size: 20, act: () => media.p?.next() }
+                        { icon: Icons.next, size: 20, act: () => Player.next() }
                     ]
                     Icon {
                         required property var modelData
@@ -329,6 +540,7 @@ PanelWindow {
             }
 
             WheelHandler { onWheel: e => cal.shift(e.angleDelta.y > 0 ? -1 : 1) }
+        }
         }
     }
 }

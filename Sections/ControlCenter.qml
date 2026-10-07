@@ -14,9 +14,9 @@ import qs.Utils
 PanelWindow {
     id: win
     readonly property int pad: Theme.padPanel
-    // window starts at the bar's bottom edge so the glass can drip out of it
+    // window starts at the bar's bottom edge so the glass grows out of it
     readonly property int lift: Theme.gap
-    readonly property int tileW: 175
+    readonly property int tileW: 150
     readonly property var adapter: Bluetooth.defaultAdapter
     // which detail list is open: "", "wifi", "bt", "lan", "vpn"
     property string expanded: ""
@@ -28,7 +28,7 @@ PanelWindow {
     // 0 closed .. 1 open, sprung
     property real progress: ShellState.controlCenter ? 1 : 0
     Behavior on progress {
-        SpringAnimation { spring: 2.5; damping: 0.4; epsilon: 0.002 }
+        NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
     }
     visible: progress > 0.002
     color: "transparent"
@@ -53,6 +53,7 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.visible
+        snapshot: true
     }
     readonly property point offset: Qt.point((screen?.width ?? 0) - width - margins.right, margins.top)
 
@@ -61,10 +62,9 @@ PanelWindow {
         offset: win.offset
         progress: win.progress
         lift: win.lift
-        screenName: win.screen?.name ?? ""
         panelH: stage.height
         originX: 1
-        bevel: 18
+        bevel: 26
         blur: 3
         tint: Qt.rgba(0.02, 0.02, 0.04, 0.45)
         vibrancy: 0.6
@@ -96,7 +96,8 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
+                radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
+                Grain { radius: parent.radius }
                 transform: Translate { y: -14 * 1 * (1 - win.progress) }
                 width: win.tileW; height: win.tileW
                 Grid {
@@ -145,7 +146,8 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
+                radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
+                Grain { radius: parent.radius }
                 transform: Translate { y: -14 * 2 * (1 - win.progress) }
                 id: media
                 readonly property var p: Player.current
@@ -186,9 +188,9 @@ PanelWindow {
                     spacing: 6
                     Repeater {
                         model: [
-                            { icon: Icons.prev, size: 22, act: () => media.p?.previous() },
+                            { icon: Icons.prev, size: 22, act: () => Player.previous() },
                             { icon: media.p?.isPlaying ? Icons.pause : Icons.play, size: 30, act: () => media.p?.togglePlaying() },
-                            { icon: Icons.next, size: 22, act: () => media.p?.next() }
+                            { icon: Icons.next, size: 22, act: () => Player.next() }
                         ]
                         Icon {
                             required property var modelData
@@ -205,7 +207,8 @@ PanelWindow {
 
         // ── detail list for the expanded connection ──
         Rectangle {
-            radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
+            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
+            Grain { radius: parent.radius }
             transform: Translate { y: -14 * 3 * (1 - win.progress) }
             width: parent.width
             height: win.expanded && win.expanded !== "display" ? Math.min(list.implicitHeight + Theme.padTile * 2, 300) : 0
@@ -344,7 +347,8 @@ PanelWindow {
 
         // ── displays ──
         Rectangle {
-            radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
+            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
+            Grain { radius: parent.radius }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             visible: Brightness.displays.length > 0 || Monitors.externals.length > 0
             width: parent.width; height: dispCol.implicitHeight + Theme.padTile * 2
@@ -480,54 +484,72 @@ PanelWindow {
             }
         }
 
-        // ── sound ──
+        // ── sound + microphone: one tile, mute rows on the left, tall sliders on the right ──
         Rectangle {
-            radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
+            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
+            Grain { radius: parent.radius }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
-            width: parent.width; height: soundCol.implicitHeight + Theme.padTile * 2
+            width: parent.width; height: 128
+
+            readonly property var chans: [
+                { label: "Sound", mic: false },
+                { label: "Microphone", mic: true }
+            ]
+            function off(c) { return c.mic ? Audio.micMuted : Audio.muted }
+            function level(c) { return c.mic ? Audio.micVolume : Audio.volume }
+
             Column {
-                id: soundCol
-                x: Theme.padTile; y: Theme.padTile
-                width: parent.width - Theme.padTile * 2
-                spacing: 8
-                StyledText { text: "Sound"; font.weight: Font.DemiBold; font.pixelSize: 12 }
-                GlassSlider {
-                    width: parent.width
-                    value: Audio.muted ? 0 : Audio.volume
-                    icon: Audio.muted || Audio.volume < 0.01 ? Icons.volOff : Icons.vol
-                    onMoved: v => { if (Audio.muted) Audio.toggleMute(); Audio.setVolume(v) }
+                id: muteCol
+                anchors { left: parent.left; leftMargin: Theme.padTile + 2; verticalCenter: parent.verticalCenter }
+                spacing: 12
+                Repeater {
+                    model: parent.parent.chans
+                    Row {
+                        id: chRow
+                        required property var modelData
+                        readonly property var tile: muteCol.parent
+                        spacing: 10
+                        Rectangle {
+                            width: 34; height: 34; radius: 17
+                            color: chRow.tile.off(chRow.modelData) ? Theme.fill : Theme.accent
+                            Behavior on color { ColorAnimation { duration: 160 } }
+                            Icon {
+                                anchors.centerIn: parent; font.pixelSize: 14
+                                text: chRow.modelData.mic ? (Audio.micMuted ? Icons.micOff : Icons.mic) : (Audio.muted ? Icons.volOff : Icons.vol)
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: chRow.modelData.mic ? Audio.toggleMic() : Audio.toggleMute() }
+                        }
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            StyledText { text: chRow.modelData.label; font.weight: Font.DemiBold; font.pixelSize: 12 }
+                            StyledText {
+                                text: chRow.tile.off(chRow.modelData) ? "Muted" : Math.round(chRow.tile.level(chRow.modelData) * 100) + "%"
+                                color: Theme.fgDim; font.pixelSize: 11
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        // ── microphone ──
-        Rectangle {
-            radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
-            transform: Translate { y: -14 * 5 * (1 - win.progress) }
-            width: parent.width; height: micCol.implicitHeight + Theme.padTile * 2
-            Column {
-                id: micCol
-                x: Theme.padTile; y: Theme.padTile
-                width: parent.width - Theme.padTile * 2
-                spacing: 8
-                StyledText { text: "Microphone"; font.weight: Font.DemiBold; font.pixelSize: 12 }
-                Row {
-                    width: parent.width
-                    spacing: 8
-                    Rectangle {
-                        id: micBtn
-                        width: 28; height: 28; radius: Theme.radiusControl
-                        color: Audio.micMuted ? Theme.fill : Theme.accent
-                        Behavior on color { ColorAnimation { duration: 160 } }
-                        Icon { anchors.centerIn: parent; text: Audio.micMuted ? Icons.micOff : Icons.mic; font.pixelSize: 14 }
-                        MouseArea { anchors.fill: parent; onClicked: Audio.toggleMic() }
-                    }
+            Row {
+                id: sliders
+                anchors { right: parent.right; top: parent.top; bottom: parent.bottom; margins: Theme.padTile }
+                spacing: Theme.padTile
+                Repeater {
+                    model: sliders.parent.chans
                     GlassSlider {
-                        width: parent.width - micBtn.width - parent.spacing
-                        opacity: Audio.micMuted ? 0.45 : 1
-                        value: Audio.micVolume
-                        icon: Icons.mic
-                        onMoved: v => Audio.setMicVolume(v)
+                        id: vs
+                        required property var modelData
+                        readonly property var tile: sliders.parent
+                        vertical: true
+                        width: 48; height: sliders.height
+                        opacity: tile.off(modelData) ? 0.5 : 1
+                        value: modelData.mic ? Audio.micVolume : (Audio.muted ? 0 : Audio.volume)
+                        icon: modelData.mic ? Icons.mic : (Audio.muted || Audio.volume < 0.01 ? Icons.volOff : Icons.vol)
+                        onMoved: v => {
+                            if (vs.modelData.mic) Audio.setMicVolume(v);
+                            else { if (Audio.muted) Audio.toggleMute(); Audio.setVolume(v) }
+                        }
                     }
                 }
             }
@@ -535,7 +557,8 @@ PanelWindow {
 
         // ── power ──
         Rectangle {
-            radius: Theme.radiusTile; color: Qt.rgba(1, 1, 1, 0.07); border.color: Qt.rgba(1, 1, 1, 0.08)
+            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
+            Grain { radius: parent.radius }
             transform: Translate { y: -14 * 6 * (1 - win.progress) }
             width: parent.width; height: powerCol.implicitHeight + Theme.padTile * 2
             Column {
