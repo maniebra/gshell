@@ -111,7 +111,7 @@ Variants {
                         Behavior on width { NumberAnimation { duration: 340; easing.type: Easing.InOutCubic } }
                         RoundedImage {
                             width: 18; height: 18; radius: 5
-                            source: notch.player?.trackArtUrl ?? ""
+                            source: Player.artUrl
                             opacity: notch.playing ? 1 : 0
                             scale: notch.playing ? 1 : 0.6
                             Behavior on opacity { NumberAnimation { duration: 260 } }

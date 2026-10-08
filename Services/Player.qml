@@ -22,7 +22,45 @@ Singleton {
     // dominant vivid color of the current cover art; transparent if none.
     // Picked once per cover and cached by art URL (cover-colors.json), so a
     // known cover needs neither a download nor a quantize pass.
-    readonly property string artUrl: current?.trackArtUrl ?? ""
+    // Elisa sends covers inline as huge data: URLs, and local files often come
+    // with no art at all; both are resolved to a cached file (see `cover`)
+    readonly property string rawArt: current?.trackArtUrl ?? ""
+    readonly property string trackFile: {
+        const u = current?.metadata?.["xesam:url"] ?? "";
+        return u.startsWith("file://") ? u : "";
+    }
+    readonly property bool remoteArt: rawArt.startsWith("http") || rawArt.startsWith("file:")
+    readonly property string coverKey: remoteArt ? "" : rawArt.startsWith("data:") ? Qt.md5(rawArt) : trackFile ? Qt.md5(trackFile) : ""
+    property string resolvedArt: ""
+    readonly property string artUrl: remoteArt ? rawArt : coverKey && resolvedArt.endsWith(coverKey + ".jpg") ? resolvedArt : ""
+    onCoverKeyChanged: {
+        if (!coverKey) return;
+        cover.target = Quickshell.cachePath("cover-" + coverKey + ".jpg");
+        cover.data = rawArt.startsWith("data:") ? rawArt.slice(rawArt.indexOf(",") + 1) : "";
+        cover.file = decodeURIComponent(trackFile.slice(7));
+        cover.running = false;
+        cover.running = true;
+    }
+    // data: art is piped in on stdin (too big for argv); otherwise use a cover
+    // image next to the track, else the one embedded in it
+    Process {
+        id: cover
+        property string target
+        property string data
+        property string file
+        stdinEnabled: true
+        command: ["sh", "-c", `
+            [ -s "$1" ] && exit 0
+            mkdir -p "$(dirname "$1")"
+            if [ -z "$2" ]; then base64 -d > "$1"; exit; fi
+            d=$(dirname "$2")
+            for n in cover folder front Cover Folder Front; do for e in jpg jpeg png; do
+                [ -f "$d/$n.$e" ] && { ffmpeg -loglevel error -y -i "$d/$n.$e" "$1"; exit; }
+            done; done
+            ffmpeg -loglevel error -y -i "$2" -an -frames:v 1 "$1"`, "sh", target, data ? "" : file]
+        onStarted: { if (data) write(data); stdinEnabled = false }
+        onExited: code => { stdinEnabled = true; if (code === 0) root.resolvedArt = "file://" + target }
+    }
     readonly property color artColor: artUrl !== "" && colorCache.colors[artUrl] ? colorCache.colors[artUrl] : "transparent"
 
     FileView {

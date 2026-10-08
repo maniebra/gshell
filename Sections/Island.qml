@@ -73,7 +73,7 @@ PanelWindow {
                 radius: win.lerp(5, 12, parent.m)
                 x: win.lerp(12, win.pad, parent.m)
                 y: win.lerp((card.fromH - 18) / 2, win.pad, parent.m)
-                source: win.player?.trackArtUrl ?? ""
+                source: Player.artUrl
             }
             Row {
                 id: eq

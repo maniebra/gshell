@@ -25,6 +25,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 body;        // x, y, w, h of the main slab in item px
     vec4 neck;        // capsule merged into the slab (liquid bridge), w <= 0 = none
     float goo;        // smooth-min blend radius between body and neck, px
+    float maxLuma;    // luminance cap keeping white content readable
 };
 layout(binding = 1) uniform sampler2D wall;
 
@@ -120,7 +121,7 @@ void main() {
     col = mix(col, tint.rgb, tint.a);
     // keep white content readable over bright backdrops: cap luminance
     float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
-    col *= min(1.0, 0.28 / max(l2, 1e-3));
+    col *= min(1.0, maxLuma / max(l2, 1e-3));
 
     // Fresnel: a ~6px band hugging the rim, lifted toward white
     float fres = clamp(pow(1.2 - depth * 0.09, 5.0), 0.0, 1.0);
@@ -135,6 +136,10 @@ void main() {
     float glare = (0.5 + 0.5 * sin(2.0 * ang)) * 1.35 * (far ? 0.85 : 1.0); // iOS 27: brighter speculars
     glare = clamp(pow(glare, 1.1), 0.0, 1.0) * fres;
     col = mix(col, min(col * 1.6 + 0.5, vec3(1.0)), glare * 0.32);
+
+    // thin white border on the outermost ~1px
+    float border = 1.0 - smoothstep(0.5, 1.5, depth);
+    col = mix(col, vec3(1.0), border * 0.25);
 
     col += (hash(px) - 0.5) * noise;
     fragColor = vec4(clamp(col, 0.0, 1.0), 1.0) * alpha * qt_Opacity;

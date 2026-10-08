@@ -51,7 +51,6 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.visible
-        snapshot: true
     }
     readonly property point offset: Qt.point(((screen?.width ?? 0) - width) / 2, margins.top)
 
@@ -359,7 +358,7 @@ PanelWindow {
                 Image {
                     id: art
                     anchors.fill: parent
-                    source: media.p?.trackArtUrl ?? ""
+                    source: Player.artUrl
                     fillMode: Image.PreserveAspectCrop
                     visible: status === Image.Ready
                     layer.enabled: true

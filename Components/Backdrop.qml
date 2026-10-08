@@ -92,7 +92,7 @@ Item {
                         id: cap
                         parent: win
                         width: win.width - 2 * win.b; height: win.height - 2 * win.b
-                        captureSource: win.visible ? win.modelData.wayland : null
+                        captureSource: root.active && win.visible ? win.modelData.wayland : null
                         live: true
                     }
                 }

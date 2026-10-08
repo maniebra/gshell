@@ -158,7 +158,6 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.visible
-        snapshot: true
     }
     readonly property point offset: Qt.point(((screen?.width ?? 0) - width) / 2, margins.top)
 

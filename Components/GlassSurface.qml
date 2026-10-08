@@ -22,6 +22,7 @@ Item {
     property rect body: Qt.rect(0, 0, width, height)
     property rect neck: Qt.rect(0, 0, 0, 0)
     property real goo: 0
+    property real maxLuma: 0.28 // raise for brighter frost
 
     ShaderEffect {
         anchors.fill: parent
@@ -45,5 +46,6 @@ Item {
         property rect body: root.body
         property rect neck: root.neck
         property real goo: root.goo
+        property real maxLuma: root.maxLuma
     }
 }

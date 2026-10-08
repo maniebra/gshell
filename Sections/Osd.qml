@@ -56,7 +56,6 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.shown
-        snapshot: true
     }
 
     GlassSurface {

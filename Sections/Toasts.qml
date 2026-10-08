@@ -30,7 +30,6 @@ PanelWindow {
         id: wall // not `backdrop`: GlassSurface's own property would shadow it in the delegate
         screen: win.screen
         active: win.visible
-        snapshot: true
     }
 
     Column {

@@ -53,7 +53,6 @@ PanelWindow {
         id: backdrop
         screen: root.scr
         active: root.visible
-        snapshot: true
     }
 
     GlassSurface {

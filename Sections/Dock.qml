@@ -68,7 +68,6 @@ Variants {
             id: backdrop
             screen: win.modelData
             active: win.shown
-            snapshot: true
         }
         readonly property point offset: Qt.point((screen.width - width) / 2, screen.height - height)
 

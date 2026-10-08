@@ -53,7 +53,6 @@ PanelWindow {
         id: backdrop
         screen: win.screen
         active: win.visible
-        snapshot: true
     }
     readonly property point offset: Qt.point((screen?.width ?? 0) - width - margins.right, margins.top)
 
@@ -99,8 +98,8 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
-                Grain { radius: parent.radius }
+                radius: Theme.radiusTile; color: "transparent"
+                GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
                 transform: Translate { y: -14 * 1 * (1 - win.progress) }
                 width: win.tileW; height: win.tileW
                 Grid {
@@ -149,8 +148,8 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
-                Grain { radius: parent.radius }
+                radius: Theme.radiusTile; color: "transparent"
+                GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
                 transform: Translate { y: -14 * 2 * (1 - win.progress) }
                 id: media
                 readonly property var p: Player.current
@@ -161,8 +160,8 @@ PanelWindow {
                     x: Theme.padTile; y: Theme.padTile
                     width: 52; height: 52
                     radius: Theme.radiusControl
-                    source: media.p?.trackArtUrl ?? ""
-                    visible: !!media.p?.trackArtUrl
+                    source: Player.artUrl
+                    visible: !!Player.artUrl
                 }
                 Icon {
                     x: Theme.padTile; y: Theme.padTile; width: 52; height: 52
@@ -210,8 +209,8 @@ PanelWindow {
 
         // ── detail list for the expanded connection ──
         Rectangle {
-            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
-            Grain { radius: parent.radius }
+            radius: Theme.radiusTile; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
             transform: Translate { y: -14 * 3 * (1 - win.progress) }
             width: parent.width
             height: win.expanded && win.expanded !== "display" ? Math.min(list.implicitHeight + Theme.padTile * 2, 300) : 0
@@ -350,8 +349,8 @@ PanelWindow {
 
         // ── displays ──
         Rectangle {
-            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
-            Grain { radius: parent.radius }
+            radius: Theme.radiusTile; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             visible: Brightness.displays.length > 0 || Monitors.externals.length > 0
             width: parent.width; height: dispCol.implicitHeight + Theme.padTile * 2
@@ -489,8 +488,8 @@ PanelWindow {
 
         // ── sound + microphone: one tile, mute rows on the left, tall sliders on the right ──
         Rectangle {
-            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
-            Grain { radius: parent.radius }
+            radius: Theme.radiusTile; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             width: parent.width; height: 128
 
@@ -560,8 +559,8 @@ PanelWindow {
 
         // ── power ──
         Rectangle {
-            radius: Theme.radiusTile; color: Theme.matte; border.color: Theme.matteBorder
-            Grain { radius: parent.radius }
+            radius: Theme.radiusTile; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
             transform: Translate { y: -14 * 6 * (1 - win.progress) }
             width: parent.width; height: powerCol.implicitHeight + Theme.padTile * 2
             Column {
