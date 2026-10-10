@@ -5,6 +5,7 @@ import Quickshell.Io
 
 Singleton {
     property bool controlCenter: false
+    onControlCenterChanged: if (!controlCenter) { console.warn("CC closed"); console.trace() }
     property bool launcher: false
     // text the launcher opens with: ":" emoji, ">" clipboard
     property string launcherPrefix: ""

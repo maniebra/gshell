@@ -18,7 +18,8 @@ Item {
     property bool snapshot: false
     onActiveChanged: if (active && snapshot) shot.captureFrame()
     // ponytail: mirrors decoration in ~/.config/hypr/hyprland.lua by hand; read via hyprctl getoption if it drifts
-    readonly property int rounding: 12
+    readonly property int rounding: 16
+    readonly property real roundingPower: 5
     readonly property int border: 1
     readonly property color activeBorder: "#ee8c8c8c"
     readonly property color inactiveBorder: "#aa595959"
@@ -82,6 +83,7 @@ Item {
                 property size itemSize: Qt.size(width, height)
                 property real radius: bare ? 0 : root.rounding + b // Hyprland draws the border outside the window
                 property real border: b
+                property real power: root.roundingPower
                 property color borderColor: ipc?.focusHistoryID === 0 ? root.activeBorder : root.inactiveBorder
                 property var src: ShaderEffectSource {
                     hideSource: true

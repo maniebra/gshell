@@ -29,10 +29,23 @@ layout(std140, binding = 0) uniform buf {
 };
 layout(binding = 1) uniform sampler2D wall;
 
-// rounded box, circular corners (matches Rectangle radius for concentric nesting)
+// rounded box with Apple "continuous" corners: the corner is a superellipse
+// (|x|^n + |y|^n = k^n, n ~ 5 = Figma's 60% "iOS" smoothing) that starts
+// ~1.3x further out than a circular arc of the same nominal radius, so the
+// straight edge eases into the curve with no curvature jump. Pills
+// (r ~ half the short side) relax back to n = 2 so capsule ends stay round.
 float sdSquircle(vec2 p, vec2 b, float r) {
-    vec2 q = abs(p) - b + r;
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+    float full = r / max(min(b.x, b.y), 1e-3);
+    float n = mix(5.0, 2.0, smoothstep(0.6, 1.0, full));
+    float k = min(r * mix(1.3, 1.0, smoothstep(0.6, 1.0, full)), min(b.x, b.y));
+    vec2 q = abs(p) - b + k;
+    if (q.x > 0.0 && q.y > 0.0) {
+        // p-norm distance; normalised by the max component to avoid pow overflow
+        float m = max(q.x, q.y);
+        vec2 u = q / m;
+        return m * pow(pow(u.x, n) + pow(u.y, n), 1.0 / n) - k;
+    }
+    return max(q.x, q.y) - k;
 }
 
 float sdBody(vec2 p) {
@@ -78,16 +91,20 @@ void main() {
     float alpha = clamp(0.5 - d, 0.0, 1.0);
     if (alpha <= 0.0) { fragColor = vec4(0.0); return; }
 
-    // outward edge direction from SDF gradient
-    vec2 e = vec2(0.5, 0.0);
-    vec2 g = normalize(vec2(shape(p + e.xy) - shape(p - e.xy),
-                            shape(p + e.yx) - shape(p - e.yx)) + 1e-5);
+    float depth = -d;
+    // outward edge direction from SDF gradient; only the rim band (bevel
+    // refraction, Fresnel/glare which vanish past ~13.4px) reads it
+    vec2 g = vec2(0.0);
+    if (depth < max(bevel, 13.4)) {
+        vec2 e = vec2(0.5, 0.0);
+        g = normalize(vec2(shape(p + e.xy) - shape(p - e.xy),
+                           shape(p + e.yx) - shape(p - e.yx)) + 1e-5);
+    }
 
     // Edge refraction, ported from liquid-glass-studio (iyinchao): within
     // `bevel` px of the rim the incidence angle grows as asin(x^2), Snell
     // gives the transmitted angle, and tan(thetaI - thetaT) sets how far
     // the ray is bent. Rays bend inward, toward the slab's centre.
-    float depth = -d;
     float xr = 1.0 - depth / bevel;
     float thetaI = asin(clamp(xr * xr, 0.0, 1.0));
     float thetaT = asin(clamp(sin(thetaI) / ior, -1.0, 1.0));
@@ -111,9 +128,13 @@ void main() {
     shift.x += ends * c.y * c.y * skew * fade * 0.1;
 
     vec2 px = itemPos + qt_TexCoord0 * itemSpan;
-    vec3 col = vec3(sampleBlur(px + shift * (1.0 + dispersion)).r,
-                    sampleBlur(px + shift).g,
-                    sampleBlur(px + shift * (1.0 - dispersion)).b);
+    // chromatic split only where it moves samples by a visible amount;
+    // the flat interior takes one blur instead of three
+    vec3 col = length(shift) * dispersion < 0.25
+        ? sampleBlur(px + shift)
+        : vec3(sampleBlur(px + shift * (1.0 + dispersion)).r,
+               sampleBlur(px + shift).g,
+               sampleBlur(px + shift * (1.0 - dispersion)).b);
 
     // vibrancy: push saturation, lift slightly
     float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));

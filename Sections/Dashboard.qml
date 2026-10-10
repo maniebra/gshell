@@ -52,14 +52,14 @@ PanelWindow {
         screen: win.screen
         active: win.visible
     }
+    readonly property var wall: backdrop.texture
     readonly property point offset: Qt.point(((screen?.width ?? 0) - width) / 2, margins.top)
 
-    // matte grey tiles with grain, same as the control center
+    // blurred glass tiles, same as the control center
     component Tile: Rectangle {
         radius: Theme.radiusTile
-        color: Theme.matte
-        border.color: Theme.matteBorder
-        Grain { radius: parent.radius }
+        color: "transparent"
+        GlassSurface { anchors.fill: parent; backdrop: win.wall; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
     }
 
     // "From Cover Art" switch: take hue + saturation from the playing cover art
@@ -74,13 +74,17 @@ PanelWindow {
             width: 30; height: 18; radius: 9
             color: sw.on ? Theme.accent : Theme.fill
             Behavior on color { ColorAnimation { duration: 160 } }
-            Rectangle {
-                width: 14; height: 14; radius: 7; y: 2
-                x: sw.on ? parent.width - width - 2 : 2
+            // knob turns to a stretched glass lens while held (iOS 26)
+            GlassKnob {
+                live: swMa.pressed
+                wall: backdrop.texture; offset: win.offset; moving: win.progress
                 color: "white"
+                width: 14 + 8 * Math.min(1, t); height: 14 + 4 * Math.min(1, t)
+                y: (parent.height - height) / 2
+                x: sw.on ? parent.width - width - 2 : 2
                 Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
             }
-            MouseArea { anchors { fill: parent; margins: -4 } onClicked: sw.toggled() }
+            MouseArea { id: swMa; anchors { fill: parent; margins: -4 } onClicked: sw.toggled() }
         }
     }
 
@@ -149,6 +153,7 @@ PanelWindow {
         Keys.onEscapePressed: ShellState.dashboard = false
 
         Segmented {
+            wall: backdrop.texture; offset: win.offset; moving: win.progress
             x: win.pad; y: win.pad
             width: 330
             anchors.horizontalCenter: parent.horizontalCenter
@@ -210,6 +215,7 @@ PanelWindow {
                     }
                 }
                 Segmented {
+            wall: backdrop.texture; offset: win.offset; moving: win.progress
                     id: styles
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: Theme.padTile }
                     options: [{ label: "Default", value: "default" }, { label: "Dark", value: "dark" }, { label: "Clear", value: "clear" }, { label: "Tinted", value: "tinted" }]
@@ -226,24 +232,6 @@ PanelWindow {
                     anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
                     on: ShellState.accentFromArt
                     onToggled: ShellState.accentFromArt = !ShellState.accentFromArt
-                }
-                Row {
-                    anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
-                    spacing: 6
-                    StyledText { anchors.verticalCenter: parent.verticalCenter; text: "From Cover Art"; font.pixelSize: 11; color: Theme.fgDim }
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 30; height: 18; radius: 9
-                        color: ShellState.accentFromArt ? Theme.accent : Theme.fill
-                        Behavior on color { ColorAnimation { duration: 160 } }
-                        Rectangle {
-                            width: 14; height: 14; radius: 7; y: 2
-                            x: ShellState.accentFromArt ? parent.width - width - 2 : 2
-                            color: "white"
-                            Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-                        }
-                        MouseArea { anchors { fill: parent; margins: -4 } onClicked: ShellState.accentFromArt = !ShellState.accentFromArt }
-                    }
                 }
                 Row {
                     anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.padTile + 2 }

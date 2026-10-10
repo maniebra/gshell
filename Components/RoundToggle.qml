@@ -24,14 +24,15 @@ Column {
         moving: root.moving + scale
         bevel: 10
         tint: Qt.rgba(1, 1, 1, 0.08)
-        scale: ma.pressed ? 0.92 : 1
-        Behavior on scale { NumberAnimation { duration: 120 } }
+        // swells while held and the accent clears to bare glass (iOS 26)
+        scale: ma.pressed ? 1.12 : 1
+        Behavior on scale { SpringAnimation { spring: 4; damping: 0.35 } }
 
         // accent wash when on; glass shows through
         Rectangle {
             anchors.fill: parent; radius: parent.radius
             color: Theme.accent
-            opacity: root.active ? 0.85 : 0
+            opacity: root.active && !ma.pressed ? 0.85 : 0
             Behavior on opacity { NumberAnimation { duration: 160 } }
         }
 

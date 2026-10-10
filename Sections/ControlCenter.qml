@@ -381,6 +381,7 @@ PanelWindow {
                             text: modelData.name; color: Theme.fgDim; font.pixelSize: 11
                         }
                         GlassSlider {
+                            wall: backdrop.texture; offset: win.offset; moving: win.progress
                             width: parent.width
                             value: modelData.value
                             icon: Icons.sun
@@ -402,6 +403,7 @@ PanelWindow {
                         spacing: 8
                         StyledText { width: 70; anchors.verticalCenter: parent.verticalCenter; text: "Built-in"; color: Theme.fgDim; font.pixelSize: 11 }
                         Segmented {
+                            wall: backdrop.texture; offset: win.offset; moving: win.progress
                             width: dispCol.width - 78
                             height: 24
                             options: [{ label: "On", value: false }, { label: "Off", value: true }]
@@ -428,6 +430,7 @@ PanelWindow {
                                     color: Theme.fgDim; font.pixelSize: 11
                                 }
                                 Segmented {
+                                    wall: backdrop.texture; offset: win.offset; moving: win.progress
                                     width: dispCol.width - 78
                                     height: 24
                                     options: [{ label: "Left", value: "left" }, { label: "Right", value: "right" },
@@ -441,6 +444,7 @@ PanelWindow {
                                 visible: ext.layout !== "off"
                                 spacing: 8
                                 Segmented {
+                                    wall: backdrop.texture; offset: win.offset; moving: win.progress
                                     id: scaleSeg
                                     visible: ext.extended
                                     width: (dispCol.width - 8) / 2
@@ -543,6 +547,7 @@ PanelWindow {
                         id: vs
                         required property var modelData
                         readonly property var tile: sliders.parent
+                        wall: backdrop.texture; offset: win.offset; moving: win.progress
                         vertical: true
                         width: 48; height: sliders.height
                         opacity: tile.off(modelData) ? 0.5 : 1
@@ -588,55 +593,16 @@ PanelWindow {
                 }
 
                 // segmented profile picker
-                Rectangle {
-                    id: seg
-                    readonly property int inset: 2
-                    readonly property var profiles: [
-                        { p: PowerProfile.PowerSaver, icon: Icons.saver, name: "Saver" },
-                        { p: PowerProfile.Balanced, icon: Icons.balanced, name: "Balanced" },
-                        { p: PowerProfile.Performance, icon: Icons.performance, name: "Performance" }
-                    ].filter(x => x.p !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
+                Segmented {
+                    wall: backdrop.texture; offset: win.offset; moving: win.progress
                     width: parent.width; height: 32
-                    radius: height / 2
-                    color: Theme.fill
-
-                    Rectangle {
-                        readonly property int idx: Math.max(0, seg.profiles.findIndex(x => x.p === PowerProfiles.profile))
-                        width: seg.width / seg.profiles.length - seg.inset * 2
-                        height: seg.height - seg.inset * 2
-                        x: seg.inset + idx * seg.width / seg.profiles.length
-                        y: seg.inset
-                        radius: height / 2
-                        color: Qt.rgba(1, 1, 1, 0.9)
-                        Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                    }
-                    Row {
-                        anchors.fill: parent
-                        Repeater {
-                            model: seg.profiles
-                            Item {
-                                required property var modelData
-                                readonly property bool on: PowerProfiles.profile === modelData.p
-                                width: seg.width / seg.profiles.length
-                                height: seg.height
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 3
-                                    Icon {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.icon; font.pixelSize: 11
-                                        color: on ? "#1c1c1e" : Theme.fg
-                                    }
-                                    StyledText {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: modelData.name; font.pixelSize: 11
-                                        color: on ? "#1c1c1e" : Theme.fg
-                                    }
-                                }
-                                MouseArea { anchors.fill: parent; onClicked: PowerProfiles.profile = modelData.p }
-                            }
-                        }
-                    }
+                    options: [
+                        { value: PowerProfile.PowerSaver, icon: Icons.saver, label: "Saver" },
+                        { value: PowerProfile.Balanced, icon: Icons.balanced, label: "Balanced" },
+                        { value: PowerProfile.Performance, icon: Icons.performance, label: "Performance" }
+                    ].filter(x => x.value !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
+                    current: PowerProfiles.profile
+                    onPicked: v => PowerProfiles.profile = v
                 }
             }
         }
