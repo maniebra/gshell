@@ -1,4 +1,5 @@
 import QtQuick
+import qs.Utils
 
 // Refracts `backdrop` (a Backdrop covering the whole screen) behind itself.
 Item {
@@ -24,7 +25,16 @@ Item {
     property real goo: 0
     property real maxLuma: 0.28 // raise for brighter frost
 
+    // low GPU: flat fill instead of the refraction shader
+    Rectangle {
+        visible: ShellState.lowGpu
+        x: root.body.x; y: root.body.y; width: root.body.width; height: root.body.height
+        radius: Math.min(root.radius, width / 2, height / 2)
+        color: Theme.matte
+    }
+
     ShaderEffect {
+        visible: !ShellState.lowGpu
         anchors.fill: parent
         fragmentShader: Qt.resolvedUrl("../Shaders/glass.frag.qsb")
         property var wall: root.backdrop

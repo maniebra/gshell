@@ -20,6 +20,10 @@ PanelWindow {
     readonly property int tileH: 170
     readonly property int tabH: 28 + pad
     property int tab: 0 // 0 overview, 1 notifications, 2 appearance
+    // same corners as the control center tiles
+    readonly property int radiusTile: Theme.radiusPanel + 20
+    readonly property int radiusControl: Theme.radiusPanel + 4
+    readonly property int radiusPanel: radiusTile + pad
 
     screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
     property real progress: ShellState.dashboard ? 1 : 0
@@ -57,9 +61,10 @@ PanelWindow {
 
     // blurred glass tiles, same as the control center
     component Tile: Rectangle {
-        radius: Theme.radiusTile
+        // smaller tiles get tighter corners
+        radius: Math.min(win.radiusTile, Math.max(Theme.radiusPanel + 4, Math.min(width, height) * 0.3))
         color: "transparent"
-        GlassSurface { anchors.fill: parent; backdrop: win.wall; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+        GlassSurface { anchors.fill: parent; backdrop: win.wall; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
     }
 
     // "From Cover Art" switch: take hue + saturation from the playing cover art
@@ -128,6 +133,7 @@ PanelWindow {
         Caption { anchors.bottom: parent.bottom; width: 64; horizontalAlignment: Text.AlignHCenter; text: ring.label }
     }
 
+
     LiquidGlass {
         backdrop: backdrop.texture
         offset: win.offset
@@ -135,6 +141,7 @@ PanelWindow {
         lift: win.lift
         panelH: stage.height
         originX: 0.5
+        radius: win.radiusPanel
         bevel: 26
         blur: 3
         tint: Qt.rgba(0.02, 0.02, 0.04, 0.45)
@@ -226,7 +233,7 @@ PanelWindow {
 
             Tile {
                 x: win.pad; y: win.pad * 2 + 168
-                width: parent.width - win.pad * 2; height: 64
+                width: parent.width - win.pad * 2; height: 64; radius: 22
                 Caption { x: Theme.padTile + 4; y: Theme.padTile; text: "Accent Color" }
                 ArtSwitch {
                     anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
@@ -337,11 +344,60 @@ PanelWindow {
                 onTriggered: media.p?.positionChanged()
             }
 
+            // equalizer backdrop: smooth spectrum wave through the Cava levels,
+            // fading upward; Cava runs while playing (bound in Bar)
+            Item {
+                id: eq
+                anchors.fill: parent
+                readonly property real amp: height * 0.6
+                property real b0: Cava.bars[0] ?? 0
+                property real b1: Cava.bars[1] ?? 0
+                property real b2: Cava.bars[2] ?? 0
+                property real b3: Cava.bars[3] ?? 0
+                property real b4: Cava.bars[4] ?? 0
+                Behavior on b0 { SmoothedAnimation { velocity: 3 } }
+                Behavior on b1 { SmoothedAnimation { velocity: 3 } }
+                Behavior on b2 { SmoothedAnimation { velocity: 3 } }
+                Behavior on b3 { SmoothedAnimation { velocity: 3 } }
+                Behavior on b4 { SmoothedAnimation { velocity: 3 } }
+                function py(v) { return height - 2 - amp * v }
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: eqMask
+                }
+                Rectangle { id: eqMask; anchors.fill: parent; radius: media.radius; visible: false; layer.enabled: true }
+
+                Shape {
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        strokeColor: Qt.alpha(Theme.accent, 0.45)
+                        strokeWidth: 1.5
+                        fillGradient: LinearGradient {
+                            x1: 0; y1: eq.height - eq.amp; x2: 0; y2: eq.height
+                            GradientStop { position: 0; color: Qt.alpha(Theme.accent, 0) }
+                            GradientStop { position: 1; color: Qt.alpha(Theme.accent, 0.28) }
+                        }
+                        startX: -1; startY: eq.height + 2
+                        PathLine { x: -1; y: eq.py(0) }
+                        PathCurve { x: eq.width * 1 / 6; y: eq.py(eq.b0) }
+                        PathCurve { x: eq.width * 2 / 6; y: eq.py(eq.b1) }
+                        PathCurve { x: eq.width * 3 / 6; y: eq.py(eq.b2) }
+                        PathCurve { x: eq.width * 4 / 6; y: eq.py(eq.b3) }
+                        PathCurve { x: eq.width * 5 / 6; y: eq.py(eq.b4) }
+                        PathCurve { x: eq.width + 1; y: eq.py(0) }
+                        PathLine { x: eq.width + 1; y: eq.height + 2 }
+                    }
+                }
+            }
+
             Rectangle {
                 id: artBox
                 x: Theme.padTile; y: Theme.padTile
                 width: 92; height: 92
-                radius: Theme.radiusControl
+                radius: win.radiusControl
                 color: Theme.fill
                 Image {
                     id: art
@@ -412,7 +468,7 @@ PanelWindow {
                     id: bar
                     width: parent.width; height: 5; radius: 2.5
                     color: Theme.fill
-                    Rectangle { width: parent.width * Math.min(1, parent.parent.frac); height: parent.height; radius: parent.radius; color: Theme.fg }
+                    Rectangle { width: parent.width * Math.min(1, parent.parent.frac); height: parent.height; radius: parent.radius; color: Theme.accent }
                 }
                 StyledText { anchors { left: parent.left; bottom: parent.bottom } text: parent.fmt(media.p?.position ?? 0); font.pixelSize: 10; color: Theme.fgDim }
                 StyledText { anchors { right: parent.right; bottom: parent.bottom } text: "-" + parent.fmt((media.p?.length ?? 0) - (media.p?.position ?? 0)); font.pixelSize: 10; color: Theme.fgDim }
@@ -434,10 +490,10 @@ PanelWindow {
             Row {
                 anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: Theme.padTile + 4 }
                 spacing: 16
-                Ring { label: "CPU"; value: SysStats.cpu; tint: "#0a84ff"; text: Math.round(SysStats.cpu * 100) + "%" }
-                Ring { label: "Memory"; value: SysStats.mem; tint: "#30d158"; text: SysStats.memUsedGb.toFixed(1) }
-                Ring { label: "Disk"; value: SysStats.disk; tint: "#ff9f0a"; text: Math.round(SysStats.disk * 100) + "%" }
-                Ring { label: "Temp"; value: SysStats.temp / 100; tint: SysStats.temp > 80 ? "#ff453a" : "#bf5af2"; text: Math.round(SysStats.temp) + "°" }
+                Ring { label: "CPU"; value: SysStats.cpu; tint: Theme.accent; text: Math.round(SysStats.cpu * 100) + "%" }
+                Ring { label: "Memory"; value: SysStats.mem; tint: Qt.lighter(Theme.accent, 1.35); text: SysStats.memUsedGb.toFixed(1) }
+                Ring { label: "Disk"; value: SysStats.disk; tint: Qt.darker(Theme.accent, 1.3); text: Math.round(SysStats.disk * 100) + "%" }
+                Ring { label: "Temp"; value: SysStats.temp / 100; tint: SysStats.temp > 80 ? Theme.accent : Qt.lighter(Theme.accent, 1.7); text: Math.round(SysStats.temp) + "°" }
             }
         }
 
@@ -457,7 +513,7 @@ PanelWindow {
             StyledText {
                 x: Theme.padTile + 4; y: Theme.padTile
                 text: Qt.formatDate(cal.today, "dddd").toUpperCase()
-                color: "#ff453a"; font.pixelSize: 12; font.weight: Font.DemiBold
+                color: Theme.accent; font.pixelSize: 12; font.weight: Font.DemiBold
             }
             StyledText {
                 x: Theme.padTile + 4; y: Theme.padTile + 16
@@ -511,7 +567,7 @@ PanelWindow {
                         Rectangle {
                             anchors.centerIn: parent
                             width: 28; height: 28; radius: 14
-                            color: "#ff453a"
+                            color: Theme.accent
                             visible: parent.isToday
                         }
                         StyledText {
