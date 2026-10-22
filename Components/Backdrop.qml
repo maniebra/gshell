@@ -16,7 +16,13 @@ Item {
     readonly property alias texture: tex
     property bool active: true
     property bool snapshot: false
-    onActiveChanged: if (active && snapshot) shot.captureFrame()
+    // Warm window captures in small batches so a new glass surface opens with
+    // its wallpaper immediately instead of sampling every window in one frame.
+    property int readyCaptures: 0
+    onActiveChanged: {
+        readyCaptures = 0
+        if (active && snapshot) shot.captureFrame()
+    }
     // ponytail: mirrors decoration in ~/.config/hypr/hyprland.lua by hand; read via hyprctl getoption if it drifts
     readonly property int rounding: 16
     readonly property real roundingPower: 5
@@ -61,6 +67,7 @@ Item {
         }
 
         Repeater {
+            id: windows
             // stable model: delegates (and their captures) persist, only move
             model: root.snapshot ? [] : Hyprland.toplevels
 
@@ -68,7 +75,9 @@ Item {
             // in one shader pass straight off the capture texture
             ShaderEffect {
                 id: win
+                required property int index
                 required property var modelData
+                readonly property int captureIndex: index
                 readonly property var ipc: modelData.lastIpcObject
                 readonly property bool bare: !!ipc?.fullscreen // f[1] rule drops border + rounding
                 readonly property int b: bare ? 0 : root.border
@@ -94,12 +103,19 @@ Item {
                         id: cap
                         parent: win
                         width: win.width - 2 * win.b; height: win.height - 2 * win.b
-                        captureSource: root.active && win.visible ? win.modelData.wayland : null
+                        captureSource: root.active && win.visible && win.captureIndex < root.readyCaptures ? win.modelData.wayland : null
                         live: true
                     }
                 }
             }
         }
+    }
+
+    Timer {
+        interval: 16
+        running: root.active && !root.snapshot && root.readyCaptures < windows.count
+        repeat: true
+        onTriggered: root.readyCaptures += 2
     }
 
     // Window geometry lives in lastIpcObject, which only updates on refresh,
