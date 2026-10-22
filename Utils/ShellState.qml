@@ -5,7 +5,6 @@ import Quickshell.Io
 
 Singleton {
     property bool controlCenter: false
-    onControlCenterChanged: if (!controlCenter) { console.warn("CC closed"); console.trace() }
     property bool launcher: false
     // text the launcher opens with: ":" emoji, ">" clipboard
     property string launcherPrefix: ""
@@ -26,6 +25,8 @@ Singleton {
     property alias accent: settings.accent
     property alias accentFromArt: settings.accentFromArt
     property alias iconTintFromArt: settings.iconTintFromArt
+    // flat panels, wallpaper-only backdrops, no live captures/visualizer
+    property alias lowGpu: settings.lowGpu
 
     FileView {
         path: Quickshell.statePath("settings.json")
@@ -41,6 +42,7 @@ Singleton {
             property string accent: "#0a84ff"
             property bool accentFromArt: false
             property bool iconTintFromArt: false
+            property bool lowGpu: false
         }
     }
 
@@ -53,5 +55,6 @@ Singleton {
         function toggleClipboard(): void { openLauncher(">") }
         function toggleDashboard(): void { dashboard = !dashboard }
         function toggleIsland(): void { island = !island }
+        function toggleLowGpu(): void { lowGpu = !lowGpu }
     }
 }

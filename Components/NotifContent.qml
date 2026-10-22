@@ -28,7 +28,7 @@ Column {
         RoundedImage {
             id: thumb
             width: 48; height: 48
-            radius: Theme.radiusControl
+            radius: Theme.radiusTile
             resolution: 96
             source: root.notif.image
             visible: root.notif.image !== ""
@@ -46,7 +46,7 @@ Column {
                 required property var modelData
                 width: (parent.width - Theme.gap * (parent.actions.length - 1)) / parent.actions.length
                 height: 28
-                radius: Theme.radiusControl
+                radius: Theme.radiusTile
                 color: ma.pressed ? Theme.fill : Qt.rgba(1, 1, 1, 0.1)
                 StyledText {
                     anchors.centerIn: parent

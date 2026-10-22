@@ -41,7 +41,9 @@ PanelWindow {
     implicitWidth: tileW * 2 + pad * 3
     implicitHeight: body.height + pad * 2 + lift
 
-    onVisibleChanged: if (visible) { Network.scan(); Brightness.refresh(); Monitors.refresh(); modesFor = ""; expanded = ""; pwFor = "" }
+    onVisibleChanged: if (visible) { modesFor = ""; expanded = ""; pwFor = ""; refreshLater.restart() }
+    // probes land after the open animation so their model updates don't relayout mid-drop
+    Timer { id: refreshLater; interval: 330; onTriggered: { Network.scan(); Brightness.refresh(); Monitors.refresh() } }
 
     HyprlandFocusGrab {
         windows: [win]
@@ -56,18 +58,6 @@ PanelWindow {
     }
     readonly property point offset: Qt.point((screen?.width ?? 0) - width - margins.right, margins.top)
 
-    LiquidGlass {
-        backdrop: backdrop.texture
-        offset: win.offset
-        progress: win.progress
-        lift: win.lift
-        panelH: stage.height
-        originX: 1
-        bevel: 26
-        blur: 3
-        tint: Qt.rgba(0.02, 0.02, 0.04, 0.45)
-        vibrancy: 0.6
-    }
     mask: Region { item: stage }
 
     Item {
@@ -77,9 +67,6 @@ PanelWindow {
     opacity: Math.max(0, Math.min(1, (win.progress - 0.45) * 2.5))
     scale: 0.86 + 0.14 * win.progress
     transformOrigin: Item.TopRight
-    // rasterize while animating so text scales smoothly instead of snapping to the pixel grid
-    layer.enabled: win.progress > 0 && win.progress < 1
-    layer.smooth: true
     transform: Translate { y: -24 * (1 - win.progress) }
 
     // one glass container holding every tile
@@ -98,8 +85,8 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusTile; color: "transparent"
-                GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+                radius: Theme.radiusPanel + 20; color: "transparent"
+                GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
                 transform: Translate { y: -14 * 1 * (1 - win.progress) }
                 width: win.tileW; height: win.tileW
                 Grid {
@@ -148,8 +135,8 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusTile; color: "transparent"
-                GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+                radius: Theme.radiusPanel + 20; color: "transparent"
+                GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
                 transform: Translate { y: -14 * 2 * (1 - win.progress) }
                 id: media
                 readonly property var p: Player.current
@@ -159,7 +146,7 @@ PanelWindow {
                     id: art
                     x: Theme.padTile; y: Theme.padTile
                     width: 52; height: 52
-                    radius: Theme.radiusControl
+                    radius: Theme.radiusPanel + 12 - Theme.padTile
                     source: Player.artUrl
                     visible: !!Player.artUrl
                 }
@@ -209,8 +196,8 @@ PanelWindow {
 
         // ── detail list for the expanded connection ──
         Rectangle {
-            radius: Theme.radiusTile; color: "transparent"
-            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+            radius: Theme.radiusPanel + 20; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 3 * (1 - win.progress) }
             width: parent.width
             height: win.expanded && win.expanded !== "display" ? Math.min(list.implicitHeight + Theme.padTile * 2, 300) : 0
@@ -268,7 +255,7 @@ PanelWindow {
                     }
                     Rectangle {
                         visible: win.expanded === "wifi" && win.pwFor !== ""
-                        width: parent.width; height: 34; radius: Theme.radiusControl
+                        width: parent.width; height: 34; radius: Theme.radiusPanel + 12 - Theme.padTile
                         color: Theme.fill
                         TextInput {
                             id: pw
@@ -349,15 +336,15 @@ PanelWindow {
 
         // ── displays ──
         Rectangle {
-            radius: Theme.radiusTile; color: "transparent"
-            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+            radius: Theme.radiusPanel + 4; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             visible: Brightness.displays.length > 0 || Monitors.externals.length > 0
-            width: parent.width; height: dispCol.implicitHeight + Theme.padTile * 2
+            width: parent.width; height: dispCol.implicitHeight + Theme.padTile * 2 * 2
             Column {
                 id: dispCol
-                x: Theme.padTile; y: Theme.padTile
-                width: parent.width - Theme.padTile * 2
+                x: Theme.padTile * 2; y: Theme.padTile * 2
+                width: parent.width - Theme.padTile * 2 * 2
                 spacing: 8
                 Item {
                     width: parent.width; height: 16
@@ -492,8 +479,8 @@ PanelWindow {
 
         // ── sound + microphone: one tile, mute rows on the left, tall sliders on the right ──
         Rectangle {
-            radius: Theme.radiusTile; color: "transparent"
-            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+            radius: Theme.radiusPanel + 20; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             width: parent.width; height: 128
 
@@ -564,8 +551,8 @@ PanelWindow {
 
         // ── power ──
         Rectangle {
-            radius: Theme.radiusTile; color: "transparent"
-            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 56; noise: 0; tint: Qt.rgba(1, 1, 1, 0.3); maxLuma: 0.5 }
+            radius: Theme.radiusPanel + 20; color: "transparent"
+            GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 6 * (1 - win.progress) }
             width: parent.width; height: powerCol.implicitHeight + Theme.padTile * 2
             Column {
@@ -603,6 +590,17 @@ PanelWindow {
                     ].filter(x => x.value !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
                     current: PowerProfiles.profile
                     onPicked: v => PowerProfiles.profile = v
+                }
+
+                Segmented {
+                    wall: backdrop.texture; offset: win.offset; moving: win.progress
+                    width: parent.width; height: 32
+                    options: [
+                        { value: false, label: "Glass" },
+                        { value: true, label: "Low GPU" }
+                    ]
+                    current: ShellState.lowGpu
+                    onPicked: v => ShellState.lowGpu = v
                 }
             }
         }

@@ -23,6 +23,7 @@ Variants {
         Backdrop {
             id: backdrop
             screen: win.modelData
+            captureHeight: Math.min(win.screen.height, win.height + 24)
         }
 
         // progressive blur: frosted at the screen edge, clear toward the bottom
@@ -41,8 +42,10 @@ Variants {
             anchors { top: parent.top; left: parent.left; right: parent.right; leftMargin: Theme.gap; rightMargin: Theme.gap }
             height: Theme.barHeight
 
-            // workspace selector: dots, the active one stretches into a pill
+            // workspace selector: dots, the active one stretches into a pill.
+            // Hover a dot: peek at that workspace's desktop below it.
             Row {
+                id: dots
                 anchors { left: parent.left; leftMargin: 14; verticalCenter: parent.verticalCenter }
                 spacing: 6
                 Repeater {
@@ -57,6 +60,12 @@ Variants {
                         color: active ? Theme.fg : Theme.fgDim
                         Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                         TapHandler { onTapped: parent.modelData.activate() }
+                        HoverHandler {
+                            onHoveredChanged: {
+                                if (hovered) { peek.dot = parent; Hyprland.refreshToplevels() }
+                                else if (peek.dot === parent) peek.dot = null
+                            }
+                        }
                     }
                 }
             }
@@ -74,7 +83,7 @@ Variants {
                 // the expanded island replaces the capsule, never both
                 readonly property bool open: hover.hovered && !ShellState.island
                 width: island.width; height: parent.height
-                Binding { target: Cava; property: "active"; value: notch.playing }
+                Binding { target: Cava; property: "active"; value: notch.playing && !ShellState.lowGpu }
                 HoverHandler { id: hover; onHoveredChanged: ShellState.islandHoverBar = hovered }
 
                 Rectangle {
@@ -281,5 +290,53 @@ Variants {
                 onReleased: if (!swiped) ShellState.controlCenter = !ShellState.controlCenter
             }
         }
-    }
+
+        PopupWindow {
+            id: peek
+            property var dot: null
+            // linger so hopping between dots doesn't flicker the popup
+            property var shown: null
+            onDotChanged: if (dot) { shown = dot; hideLater.stop() } else hideLater.restart()
+            Timer { id: hideLater; interval: 120; onTriggered: peek.shown = null }
+            readonly property real k: 260 / win.screen.width
+            visible: shown !== null
+            color: "transparent"
+            anchor.item: shown ?? dots
+            anchor.rect.x: (shown?.width ?? 0) / 2 - width / 2
+            anchor.rect.y: Theme.barHeight / 2 + 10
+            implicitWidth: 260
+            implicitHeight: Math.round(win.screen.height * k)
+
+            // a toplevel can only be captured once and the bar's backdrop already
+            // holds the active workspace's windows: snapshot the output for it instead
+            readonly property bool current: peek.shown?.active ?? false
+            Backdrop {
+                id: peekShot
+                screen: win.modelData
+                snapshot: peek.current
+                active: peek.visible
+                textureScale: peek.k
+                workspace: peek.current ? -1 : (peek.shown?.modelData.id ?? -1)
+            }
+            Rectangle {
+                id: frame
+                anchors.fill: parent
+                radius: Theme.radiusTile
+                color: "black"
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: peekMask
+                    maskThresholdMin: 0.5
+                    maskSpreadAtMin: 1
+                }
+                ShaderEffect {
+                    anchors.fill: parent
+                    property var source: peekShot.texture
+                }
+            }
+            Rectangle { id: peekMask; anchors.fill: parent; radius: frame.radius; visible: false; layer.enabled: true }
+            Rectangle { anchors.fill: parent; radius: frame.radius; color: "transparent"; border { width: 1; color: Qt.rgba(1, 1, 1, 0.25) } }
+        }
+}
 }

@@ -172,7 +172,7 @@ PanelWindow {
             backdrop: backdrop.texture
             offset: win.offset
             moving: win.progress
-            radius: Theme.radiusPanel
+            radius: Theme.radiusPanel + Theme.padPanel * 2
             bevel: 26
             blur: 1.5
             tint: Qt.rgba(1, 1, 1, 0.03)

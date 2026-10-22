@@ -76,7 +76,7 @@ PanelWindow {
                     // hidden: just past the screen's right edge
                     x: toast.shown ? 0 : width + win.margin
                     moving: x
-                    radius: Theme.radiusTile
+                    radius: Theme.radiusPanel + 4
                     bevel: 14
                     tint: Qt.rgba(0, 0, 0, 0.06) // barely there: whites stay white
                     vibrancy: 0.6

@@ -66,7 +66,7 @@ PanelWindow {
         // hidden: just below the window's bottom edge
         y: win.shown ? 0 : win.height
         moving: y
-        radius: Theme.radiusTile
+        radius: height / 2
         bevel: 14
         tint: Qt.rgba(0.02, 0.02, 0.04, 0.45)
         vibrancy: 0.6

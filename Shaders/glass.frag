@@ -33,11 +33,11 @@ layout(binding = 1) uniform sampler2D wall;
 // (|x|^n + |y|^n = k^n, n ~ 5 = Figma's 60% "iOS" smoothing) that starts
 // ~1.3x further out than a circular arc of the same nominal radius, so the
 // straight edge eases into the curve with no curvature jump. Pills
-// (r ~ half the short side) relax back to n = 2 so capsule ends stay round.
+// (r > 0.9x half the short side) relax back to n = 2 so capsule ends stay round.
 float sdSquircle(vec2 p, vec2 b, float r) {
     float full = r / max(min(b.x, b.y), 1e-3);
-    float n = mix(5.0, 2.0, smoothstep(0.6, 1.0, full));
-    float k = min(r * mix(1.3, 1.0, smoothstep(0.6, 1.0, full)), min(b.x, b.y));
+    float n = mix(5.0, 2.0, smoothstep(0.9, 1.0, full));
+    float k = min(r * mix(1.3, 1.0, smoothstep(0.9, 1.0, full)), min(b.x, b.y));
     vec2 q = abs(p) - b + k;
     if (q.x > 0.0 && q.y > 0.0) {
         // p-norm distance; normalised by the max component to avoid pow overflow
