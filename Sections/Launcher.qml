@@ -164,7 +164,6 @@ PanelWindow {
     Item {
         anchors.fill: parent
         opacity: Math.min(1, win.progress * 1.6)
-        scale: 0.92 + 0.08 * win.progress
         transformOrigin: Item.Top
 
         GlassSurface {
@@ -172,7 +171,7 @@ PanelWindow {
             backdrop: backdrop.texture
             offset: win.offset
             moving: win.progress
-            radius: Theme.radiusPanel + Theme.padPanel * 2
+            radius: Theme.radiusWindow
             bevel: 26
             blur: 1.5
             tint: Qt.rgba(1, 1, 1, 0.03)
@@ -276,7 +275,7 @@ PanelWindow {
                     RoundedImage {
                         visible: !!modelData.thumb
                         anchors.fill: ic
-                        radius: 6
+                        radius: Theme.radiusControl
                         resolution: 64
                         source: modelData.thumb ? "file://" + modelData.thumb : ""
                     }

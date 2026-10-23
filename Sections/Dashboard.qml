@@ -20,10 +20,6 @@ PanelWindow {
     readonly property int tileH: 170
     readonly property int tabH: 28 + pad
     property int tab: 0 // 0 overview, 1 notifications, 2 appearance
-    // same corners as the control center tiles
-    readonly property int radiusTile: Theme.radiusPanel + 20
-    readonly property int radiusControl: Theme.radiusPanel + 4
-    readonly property int radiusPanel: radiusTile + pad
 
     screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
     property real progress: ShellState.dashboard ? 1 : 0
@@ -61,8 +57,7 @@ PanelWindow {
 
     // blurred glass tiles, same as the control center
     component Tile: Rectangle {
-        // smaller tiles get tighter corners
-        radius: Math.min(win.radiusTile, Math.max(Theme.radiusPanel + 4, Math.min(width, height) * 0.3))
+        radius: Theme.radiusPanel
         color: "transparent"
         GlassSurface { anchors.fill: parent; backdrop: win.wall; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
     }
@@ -79,12 +74,11 @@ PanelWindow {
             width: 30; height: 18; radius: 9
             color: sw.on ? Theme.accent : Theme.fill
             Behavior on color { ColorAnimation { duration: 160 } }
-            // knob turns to a stretched glass lens while held (iOS 26)
             GlassKnob {
                 live: swMa.pressed
                 wall: backdrop.texture; offset: win.offset; moving: win.progress
                 color: "white"
-                width: 14 + 8 * Math.min(1, t); height: 14 + 4 * Math.min(1, t)
+                width: 14; height: 14
                 y: (parent.height - height) / 2
                 x: sw.on ? parent.width - width - 2 : 2
                 Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
@@ -141,7 +135,7 @@ PanelWindow {
         lift: win.lift
         panelH: stage.height
         originX: 0.5
-        radius: win.radiusPanel
+        radius: Theme.radiusWindow
         bevel: 26
         blur: 3
         tint: Qt.rgba(0.02, 0.02, 0.04, 0.45)
@@ -153,7 +147,6 @@ PanelWindow {
         y: win.lift; width: parent.width; height: parent.height - win.lift
         // content fades in once the drop has mostly formed
         opacity: Math.max(0, Math.min(1, (win.progress - 0.45) * 2.5))
-        scale: 0.86 + 0.14 * win.progress
         transformOrigin: Item.Top
         transform: Translate { y: -24 * (1 - win.progress) }
         focus: true
@@ -212,8 +205,6 @@ PanelWindow {
                             antialiasing: true
                             color: modelData
                             border { width: picked ? 2 : 0; color: Theme.fg }
-                            scale: picked ? 1.15 : 1
-                            Behavior on scale { NumberAnimation { duration: 150 } }
                             MouseArea {
                                 anchors { fill: parent; margins: -3 }
                                 onClicked: { ShellState.iconTint = parent.modelData; ShellState.iconStyle = "tinted" }
@@ -233,7 +224,7 @@ PanelWindow {
 
             Tile {
                 x: win.pad; y: win.pad * 2 + 168
-                width: parent.width - win.pad * 2; height: 64; radius: 22
+                width: parent.width - win.pad * 2; height: 64
                 Caption { x: Theme.padTile + 4; y: Theme.padTile; text: "Accent Color" }
                 ArtSwitch {
                     anchors { right: parent.right; rightMargin: Theme.padTile + 4; top: parent.top; topMargin: Theme.padTile - 2 }
@@ -252,8 +243,6 @@ PanelWindow {
                             antialiasing: true
                             color: modelData
                             border { width: picked ? 2 : 0; color: Theme.fg }
-                            scale: picked ? 1.15 : 1
-                            Behavior on scale { NumberAnimation { duration: 150 } }
                             // with cover-art sampling on, the pick only sets lightness
                             MouseArea { anchors { fill: parent; margins: -3 } onClicked: ShellState.accent = parent.modelData }
                         }
@@ -397,7 +386,7 @@ PanelWindow {
                 id: artBox
                 x: Theme.padTile; y: Theme.padTile
                 width: 92; height: 92
-                radius: win.radiusControl
+                radius: Theme.radiusTile
                 color: Theme.fill
                 Image {
                     id: art

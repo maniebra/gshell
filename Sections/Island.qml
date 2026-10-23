@@ -20,7 +20,6 @@ PanelWindow {
     readonly property bool hovered: ShellState.islandHoverBar || ShellState.islandHoverCard
     // 0 capsule .. 1 card
     property real progress: open ? 1 : 0
-    Behavior on progress { NumberAnimation { duration: 380; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
 
     // close after a short grace once the pointer is off both, so moving from
     // the clock into the card doesn't close it

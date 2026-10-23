@@ -3,7 +3,7 @@ import qs.Utils
 
 // iOS-style segmented control. `options` is [{ label, value, icon? }]; emits
 // picked(value). With a `wall` the pill turns to liquid glass while held and
-// can be dragged across segments (iOS 26 tab bar).
+// can be dragged across segments.
 Rectangle {
     id: seg
     property var options: []
@@ -30,7 +30,6 @@ Rectangle {
         x: ma.pressed ? Math.max(seg.inset, Math.min(seg.width - width - seg.inset, ma.mouseX - width / 2))
                       : seg.inset + Math.max(seg.idx, 0) * seg.cell
         y: seg.inset
-        scale: 1 + 0.15 * t
         Behavior on x { enabled: !ma.pressed; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
     }
     Row {
