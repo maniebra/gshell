@@ -65,7 +65,6 @@ PanelWindow {
     y: win.lift; width: parent.width; height: parent.height - win.lift
     // content fades in once the drop has mostly formed
     opacity: Math.max(0, Math.min(1, (win.progress - 0.45) * 2.5))
-    scale: 0.86 + 0.14 * win.progress
     transformOrigin: Item.TopRight
     transform: Translate { y: -24 * (1 - win.progress) }
 
@@ -85,7 +84,7 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusPanel + 20; color: "transparent"
+                radius: Theme.radiusPanel; color: "transparent"
                 GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
                 transform: Translate { y: -14 * 1 * (1 - win.progress) }
                 width: win.tileW; height: win.tileW
@@ -135,7 +134,7 @@ PanelWindow {
 
             Rectangle {
 
-                radius: Theme.radiusPanel + 20; color: "transparent"
+                radius: Theme.radiusPanel; color: "transparent"
                 GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
                 transform: Translate { y: -14 * 2 * (1 - win.progress) }
                 id: media
@@ -146,7 +145,7 @@ PanelWindow {
                     id: art
                     x: Theme.padTile; y: Theme.padTile
                     width: 52; height: 52
-                    radius: Theme.radiusPanel + 12 - Theme.padTile
+                    radius: Theme.radiusTile
                     source: Player.artUrl
                     visible: !!Player.artUrl
                 }
@@ -196,14 +195,13 @@ PanelWindow {
 
         // ── detail list for the expanded connection ──
         Rectangle {
-            radius: Theme.radiusPanel + 20; color: "transparent"
+            radius: Theme.radiusPanel; color: "transparent"
             GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 3 * (1 - win.progress) }
             width: parent.width
             height: win.expanded && win.expanded !== "display" ? Math.min(list.implicitHeight + Theme.padTile * 2, 300) : 0
             visible: height > 0
             clip: true
-            Behavior on height { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
 
             Flickable {
                 anchors { fill: parent; margins: Theme.padTile }
@@ -255,7 +253,7 @@ PanelWindow {
                     }
                     Rectangle {
                         visible: win.expanded === "wifi" && win.pwFor !== ""
-                        width: parent.width; height: 34; radius: Theme.radiusPanel + 12 - Theme.padTile
+                        width: parent.width; height: 34; radius: Theme.radiusControl
                         color: Theme.fill
                         TextInput {
                             id: pw
@@ -336,7 +334,7 @@ PanelWindow {
 
         // ── displays ──
         Rectangle {
-            radius: Theme.radiusPanel + 4; color: "transparent"
+            radius: Theme.radiusPanel; color: "transparent"
             GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             visible: Brightness.displays.length > 0 || Monitors.externals.length > 0
@@ -479,7 +477,7 @@ PanelWindow {
 
         // ── sound + microphone: one tile, mute rows on the left, tall sliders on the right ──
         Rectangle {
-            radius: Theme.radiusPanel + 20; color: "transparent"
+            radius: Theme.radiusPanel; color: "transparent"
             GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 4 * (1 - win.progress) }
             width: parent.width; height: 128
@@ -551,7 +549,7 @@ PanelWindow {
 
         // ── power ──
         Rectangle {
-            radius: Theme.radiusPanel + 20; color: "transparent"
+            radius: Theme.radiusPanel; color: "transparent"
             GlassSurface { anchors.fill: parent; backdrop: backdrop.texture; offset: win.offset; moving: win.progress; radius: parent.radius; blur: 14; noise: 0; tint: Qt.rgba(1, 1, 1, 0.08); maxLuma: 0.4; vibrancy: 0.5; dispersion: 0.2; bevel: 24; strength: 110 }
             transform: Translate { y: -14 * 6 * (1 - win.progress) }
             width: parent.width; height: powerCol.implicitHeight + Theme.padTile * 2

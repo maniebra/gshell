@@ -37,6 +37,7 @@ Singleton {
     readonly property int radiusTile: radiusControl + padTile
     readonly property int padPanel: 8
     readonly property int radiusPanel: radiusTile + padPanel
+    readonly property int radiusWindow: radiusPanel + padPanel
     readonly property string font: "SF Pro Text"
     readonly property string iconFont: "SF Pro Text"
 }

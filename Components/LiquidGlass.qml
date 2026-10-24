@@ -1,8 +1,8 @@
 import QtQuick
 import qs.Utils
 
-// Panel glass that grows down out of the bar. Fill the panel window, which
-// must start at the bar's bottom edge (not over it: a surface mapped under the
+// Panel glass that fades in below the bar. Fill the panel window, which must
+// start at the bar's bottom edge (not over it: a surface mapped under the
 // pointer on the bar clears the focus grab).
 GlassSurface {
     id: root
@@ -16,8 +16,5 @@ GlassSurface {
     opacity: Math.min(1, p * 5)
     radius: Theme.radiusPanel
     moving: progress
-    body: {
-        const w = width * (0.35 + 0.65 * p), h = panelH * (0.15 + 0.85 * p);
-        return Qt.rect((width - w) * originX, lift * p, w, h);
-    }
+    body: Qt.rect(0, lift, width, panelH)
 }

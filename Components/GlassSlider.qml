@@ -9,7 +9,7 @@ Item {
     property string icon
     property bool vertical: false
     property real radius: Math.min(width, height) / 2
-    // optional: with a backdrop the fill turns to liquid glass while dragged (iOS 26)
+    // optional: with a backdrop the fill turns to liquid glass while dragged
     property var wall: null
     property point offset: Qt.point(0, 0)
     property real moving: 0
@@ -17,9 +17,6 @@ Item {
     implicitWidth: vertical ? 56 : 200
     implicitHeight: vertical ? 140 : 28
     readonly property real v: Math.max(0, Math.min(root.value, 1))
-
-    // swell while held, like the iOS 26 controls
-    scale: 1 + 0.06 * fill.t
 
     Rectangle {
         id: track
@@ -31,7 +28,7 @@ Item {
         GlassKnob {
             id: fill
             live: ma.pressed
-            wall: root.wall; offset: root.offset; moving: root.moving + root.scale
+            wall: root.wall; offset: root.offset; moving: root.moving
             readonly property real cap: Math.min(track.width, track.height)
             width: root.vertical ? track.width : Math.max(cap, track.width * root.v)
             height: root.vertical ? Math.max(cap, track.height * root.v) : track.height

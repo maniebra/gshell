@@ -59,7 +59,7 @@ PanelWindow {
         anchors.fill: parent
         backdrop: backdrop.texture
         offset: Qt.point(root.margins.left, root.margins.top)
-        radius: Theme.radiusControl + root.pad // concentric with the rows
+        radius: Theme.radiusTile
         bevel: 12
         blur: 6
         tint: Qt.rgba(0.02, 0.02, 0.04, 0.5)

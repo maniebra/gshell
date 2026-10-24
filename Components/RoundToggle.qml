@@ -21,13 +21,9 @@ Column {
         width: 46; height: 46; radius: width / 2 // iOS round toggle
         backdrop: root.backdrop
         offset: root.offset
-        moving: root.moving + scale
+        moving: root.moving
         bevel: 10
         tint: Qt.rgba(1, 1, 1, 0.08)
-        // swells while held and the accent clears to bare glass (iOS 26)
-        scale: ma.pressed ? 1.12 : 1
-        Behavior on scale { SpringAnimation { spring: 4; damping: 0.35 } }
-
         // accent wash when on; glass shows through
         Rectangle {
             anchors.fill: parent; radius: parent.radius

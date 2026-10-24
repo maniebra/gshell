@@ -72,7 +72,7 @@ vec2 wallUv(vec2 px) { return clamp(px, vec2(0.5), screenSize - 0.5) / screenSiz
 
 // smooth blur: read a mip level matching the radius, then average a small
 // ring of taps at that level to hide the mip box-filter blockiness
-vec3 sampleBlur(vec2 px) {
+vec3 sampleBlur(vec2 px, float blur) {
     if (blur <= 0.5) return texture(wall, wallUv(px)).rgb;
     float lod = log2(blur);
     vec3 c = textureLod(wall, wallUv(px), lod).rgb * 2.0;
@@ -130,11 +130,15 @@ void main() {
     vec2 px = itemPos + qt_TexCoord0 * itemSpan;
     // chromatic split only where it moves samples by a visible amount;
     // the flat interior takes one blur instead of three
+    // Apple-style split: clear refracting rim, frosted interior so text on
+    // top stays legible. Blur ramps up past the bevel to ~4x (min 8px).
+    float inner = smoothstep(bevel * 0.5, bevel * 1.5, depth);
+    float br = mix(blur, max(blur * 4.0, 8.0), inner);
     vec3 col = length(shift) * dispersion < 0.25
-        ? sampleBlur(px + shift)
-        : vec3(sampleBlur(px + shift * (1.0 + dispersion)).r,
-               sampleBlur(px + shift).g,
-               sampleBlur(px + shift * (1.0 - dispersion)).b);
+        ? sampleBlur(px + shift, br)
+        : vec3(sampleBlur(px + shift * (1.0 + dispersion), br).r,
+               sampleBlur(px + shift, br).g,
+               sampleBlur(px + shift * (1.0 - dispersion), br).b);
 
     // vibrancy: push saturation, lift slightly
     float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
@@ -143,18 +147,22 @@ void main() {
     // keep white content readable over bright backdrops: cap luminance
     float l2 = dot(col, vec3(0.2126, 0.7152, 0.0722));
     col *= min(1.0, maxLuma / max(l2, 1e-3));
+    // flatten leftover backdrop contrast in the interior so edges behind
+    // text don't compete with glyphs
+    float l3 = dot(col, vec3(0.2126, 0.7152, 0.0722));
+    col = mix(col, mix(vec3(l3), col, 0.6) * 0.7 + maxLuma * 0.3, inner * 0.6);
 
     // Fresnel: a ~6px band hugging the rim, lifted toward white
     float fres = clamp(pow(1.2 - depth * 0.09, 5.0), 0.0, 1.0);
     col = mix(col, vec3(1.0), fres * 0.045);
-    // iOS 27: thin darkened edge just inside the rim for separation
+    // Thin darkened edge just inside the rim for separation.
     float rimDark = smoothstep(0.0, 1.5, depth) * (1.0 - smoothstep(1.5, 5.0, depth));
     col *= 1.0 - rimDark * 0.35;
     // glare: two lobes on opposite diagonals (doubled normal angle), key at
     // bottom-left, the far lobe at top-right dimmer
     float ang = atan(-g.y, g.x); // y-up angle of the rim normal
     bool far = g.x > 0.0 && g.y < 0.0;
-    float glare = (0.5 + 0.5 * sin(2.0 * ang)) * 1.35 * (far ? 0.85 : 1.0); // iOS 27: brighter speculars
+    float glare = (0.5 + 0.5 * sin(2.0 * ang)) * 1.35 * (far ? 0.85 : 1.0);
     glare = clamp(pow(glare, 1.1), 0.0, 1.0) * fres;
     col = mix(col, min(col * 1.6 + 0.5, vec3(1.0)), glare * 0.32);
 

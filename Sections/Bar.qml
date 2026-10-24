@@ -42,7 +42,7 @@ Variants {
             anchors { top: parent.top; left: parent.left; right: parent.right; leftMargin: Theme.gap; rightMargin: Theme.gap }
             height: Theme.barHeight
 
-            // workspace selector: dots, the active one stretches into a pill.
+            // workspace selector: the active dot changes color without resizing.
             // Hover a dot: peek at that workspace's desktop below it.
             Row {
                 id: dots
@@ -54,11 +54,10 @@ Variants {
                         required property var modelData
                         readonly property bool active: modelData.id === Hyprland.monitorFor(win.screen)?.activeWorkspace?.id
                         visible: modelData.id > 0 && modelData.monitor?.name === win.screen.name
-                        width: active ? 20 : 8
+                        width: 8
                         height: 8
                         radius: 4
                         color: active ? Theme.fg : Theme.fgDim
-                        Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                         TapHandler { onTapped: parent.modelData.activate() }
                         HoverHandler {
                             onHoveredChanged: {
@@ -92,17 +91,12 @@ Variants {
                     anchors.verticalCenter: parent.verticalCenter
                     height: parent.height - 2
                     radius: height / 2
-                    // follows the content, which already animates; only the
-                    // padding animates here, so both move in the same frames
                     property real padX: notch.open ? 24 : 16
-                    Behavior on padX { NumberAnimation { duration: 340; easing.type: Easing.InOutCubic } }
                     width: content.implicitWidth + padX
                     onWidthChanged: if (notch.open) ShellState.islandFrom = width
                     color: "black"
                     opacity: notch.open ? 1 : 0
-                    scale: notch.open ? 1 : 0.92
                     Behavior on opacity { NumberAnimation { duration: 260; easing.type: Easing.InOutQuad } }
-                    Behavior on scale { NumberAnimation { duration: 340; easing.type: Easing.OutCubic } }
                 }
 
                 Row {
@@ -117,14 +111,11 @@ Variants {
                         width: notch.playing ? 28 : 0
                         height: 18
                         clip: true
-                        Behavior on width { NumberAnimation { duration: 340; easing.type: Easing.InOutCubic } }
                         RoundedImage {
                             width: 18; height: 18; radius: 5
                             source: Player.artUrl
                             opacity: notch.playing ? 1 : 0
-                            scale: notch.playing ? 1 : 0.6
                             Behavior on opacity { NumberAnimation { duration: 260 } }
-                            Behavior on scale { NumberAnimation { duration: 340; easing.type: Easing.OutCubic } }
                         }
                     }
 
@@ -137,7 +128,6 @@ Variants {
                         width: track ? title.width : clockText.implicitWidth
                         height: 18
                         clip: true // texts slide through the slot's edges
-                        Behavior on width { NumberAnimation { duration: 340; easing.type: Easing.InOutCubic } }
 
                         StyledText {
                             id: clockText
@@ -174,7 +164,6 @@ Variants {
                         width: notch.playing ? eqRow.implicitWidth + 10 : 0
                         height: 14
                         clip: true
-                        Behavior on width { NumberAnimation { duration: 340; easing.type: Easing.InOutCubic } }
                     Row {
                         id: eqRow
                         anchors { right: parent.right; verticalCenter: parent.verticalCenter }

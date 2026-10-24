@@ -97,7 +97,6 @@ Variants {
             blur: 4
             vibrancy: 0.6
             tint: Qt.rgba(0, 0, 0, 0.18)
-            Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
             Row {
                 id: row
@@ -110,8 +109,6 @@ Variants {
                         required property var modelData
                         width: win.iconSize; height: win.iconSize
                         appId: modelData.lastIpcObject.class
-                        scale: tap.pressed ? 0.88 : 1
-                        Behavior on scale { NumberAnimation { duration: 120 } }
                         TapHandler { id: tap; onTapped: app.modelData.wayland?.activate() }
                         TapHandler { acceptedButtons: Qt.RightButton; onTapped: win.openMenu(app) }
                         // running/focused indicator
