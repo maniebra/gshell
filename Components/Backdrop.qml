@@ -94,6 +94,17 @@ Item {
                 readonly property bool bare: !!ipc?.fullscreen // f[1] rule drops border + rounding
                 readonly property int b: bare ? 0 : root.border
                 readonly property bool onSpecial: root.special !== 0 && modelData.workspace?.id === root.special
+                // Hyprland's closewindow IPC event lands before the wayland toplevel dies;
+                // dropping the capture then avoids a frame request on the dead handle
+                // (wl_display "invalid object" fatal error)
+                property bool closing: false
+                Connections {
+                    target: Hyprland
+                    function onRawEvent(event) {
+                        if (event.name === "closewindow" && event.data.replace(/^0x/, "") === String(win.modelData.address).replace(/^0x/, ""))
+                            win.closing = true
+                    }
+                }
                 visible: (modelData.workspace?.id === root.workspace || onSpecial) && !!ipc?.at
                 // ponytail: z-order approximated as special > floating > tiled, recent focus on top
                 z: (onSpecial ? 2000 : ipc?.floating ? 1000 : 0) - (ipc?.focusHistoryID ?? 0)
@@ -116,7 +127,7 @@ Item {
                         id: cap
                         parent: win
                         width: win.width - 2 * win.b; height: win.height - 2 * win.b
-                        captureSource: root.active && win.visible && win.captureIndex < root.readyCaptures ? win.modelData.wayland : null
+                        captureSource: root.active && win.visible && !win.closing && win.captureIndex < root.readyCaptures ? win.modelData.wayland : null
                         live: true
                     }
                 }
